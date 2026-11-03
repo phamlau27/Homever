@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.homever.ui.theme.HomEverTheme
 
-import com.example.homever.ui.screens.LoginScreen
+import com.example.homever.ui.screens.OtpScreen
 import androidx.compose.foundation.layout.Box
 
 class MainActivity : ComponentActivity() {
@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
             HomEverTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
-                        LoginScreen()
+                        OtpScreen()
                     }
                 }
             }
