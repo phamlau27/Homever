@@ -1,15 +1,80 @@
+# ==============================
+# Android Studio / IntelliJ
+# ==============================
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+*.iws
+*.ipr
+
+# Android Studio local settings
+.idea/workspace.xml
+.idea/usage.statistics.xml
+.idea/dictionaries/
+.idea/shelf/
+
+# ==============================
+# Gradle
+# ==============================
+.gradle/
+build/
+**/build/
+
+# ==============================
+# Android
+# ==============================
 local.properties
+
+# Generated APK / AAB
+*.apk
+*.aab
+
+# Generated files
+captures/
+.externalNativeBuild/
+.cxx/
+
+# ==============================
+# Kotlin
+# ==============================
+*.class
+.kotlin/
+
+# ==============================
+# OS
+# ==============================
+.DS_Store
+Thumbs.db
+
+# ==============================
+# Logs
+# ==============================
+*.log
+
+# ==============================
+# Temporary files
+# ==============================
+*.tmp
+*.temp
+
+# ==============================
+# Secrets / Environment
+# ==============================
+.env
+.env.*
+!.env.example
+
+# ==============================
+# Keystore / Signing
+# ==============================
+*.jks
+*.keystore
+
+# ==============================
+# Firebase / Google credentials
+# ==============================
+google-services.json
+
+# ==============================
+# Generated / local configuration
+# ==============================
+secrets.properties
