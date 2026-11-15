@@ -1,6 +1,7 @@
 package com.example.homever.viewmodel
 
 import android.net.Uri
+import com.example.homever.domain.model.LifestyleCriteria
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -115,8 +116,9 @@ class ProfileViewModel(
      * Updates and immediately saves introduction notes (bio, lifestyle, traits) to Backend.
      */
     fun saveIntroNotes(bio: String, lifestyle: String, traits: String, onComplete: ((Boolean) -> Unit)? = null) {
+        val updatedLifestyle = LifestyleCriteria.withNote(_tempLifestyle.value, lifestyle)
         _tempBio.value = bio
-        _tempLifestyle.value = lifestyle
+        _tempLifestyle.value = updatedLifestyle
         _tempTraits.value = traits
 
         viewModelScope.launch {
@@ -128,7 +130,7 @@ class ProfileViewModel(
             )
             val updated = current.copy(
                 bio = bio,
-                lifestyle = lifestyle,
+                lifestyle = updatedLifestyle,
                 traits = traits
             )
             val result = profileRepository.updateMyProfile(updated)
@@ -217,6 +219,11 @@ class ProfileViewModel(
         }
     }
 
+    fun onLocalNetworkPermissionDenied() {
+        _status.value = ProfileStatus.ERROR
+        _errorMessage.value = "Cần quyền truy cập mạng nội bộ để kết nối máy chủ. Hãy cấp quyền rồi nhấn Thử lại."
+    }
+
     fun clearError() {
         _errorMessage.value = null
         if (_status.value == ProfileStatus.ERROR) {
@@ -236,6 +243,7 @@ class ProfileViewModel(
     fun checkProfileExists(onResult: (exists: Boolean?, isUnauthorized: Boolean) -> Unit) {
         viewModelScope.launch {
             _status.value = ProfileStatus.LOADING
+            _errorMessage.value = null
             val result = profileRepository.getMyProfile()
             result.fold(
                 onSuccess = { profile ->
@@ -280,6 +288,7 @@ class ProfileViewModel(
     fun loadProfile(onComplete: ((Boolean) -> Unit)? = null) {
         viewModelScope.launch {
             _status.value = ProfileStatus.LOADING
+            _errorMessage.value = null
             val result = profileRepository.getMyProfile()
             result.fold(
                 onSuccess = { profile ->
@@ -295,11 +304,23 @@ class ProfileViewModel(
                 },
                 onFailure = { error ->
                     Log.e("ProfileViewModel", "loadProfile failed: ${error.message}", error)
-                    if (error.message == "UNAUTHORIZED") {
-                        _status.value = ProfileStatus.UNAUTHORIZED
-                    } else {
-                        _status.value = ProfileStatus.ERROR
-                        _errorMessage.value = error.localizedMessage
+                    when (error.message) {
+                        "PROFILE_NOT_FOUND" -> {
+                            _currentProfile.value = null
+                            _status.value = ProfileStatus.IDLE
+                        }
+                        "UNAUTHORIZED" -> {
+                            _status.value = ProfileStatus.UNAUTHORIZED
+                            _errorMessage.value = "Phiên đăng nhập đã hết hạn"
+                        }
+                        else -> {
+                            _status.value = ProfileStatus.ERROR
+                            _errorMessage.value = if (error.message?.startsWith("NETWORK_ERROR") == true) {
+                                "Không thể kết nối máy chủ. Hãy kiểm tra backend đang chạy và nhấn Thử lại."
+                            } else {
+                                error.localizedMessage
+                            }
+                        }
                     }
                     onComplete?.invoke(false)
                 }

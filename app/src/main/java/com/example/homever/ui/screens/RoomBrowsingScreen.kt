@@ -46,6 +46,7 @@ private val RoomHeartOutlinedIcon: ImageVector
 fun RoomBrowsingScreen(
     onNavigateToDiscover: () -> Unit = {},
     onNavigateToMessages: () -> Unit = {},
+    onNavigateToInvites: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {}
 ) {
     Scaffold(
@@ -55,7 +56,8 @@ fun RoomBrowsingScreen(
                 onDiscoverClick = onNavigateToDiscover,
                 onRoomClick = {},
                 onMessagesClick = onNavigateToMessages,
-                onProfileClick = onNavigateToProfile
+                onProfileClick = onNavigateToProfile,
+                onInvitesClick = onNavigateToInvites
             )
         }
     ) { innerPadding ->

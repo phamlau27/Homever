@@ -1,200 +1,120 @@
 package com.example.homever.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.homever.data.network.ConversationSummary
 import com.example.homever.ui.theme.*
-
-private val MsgSearchIcon: ImageVector
-    get() = ImageVector.Builder(name = "Search", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f).apply {
-        path(stroke = SolidColor(Color.Gray), strokeLineWidth = 2f) {
-            moveTo(21f, 21f); lineTo(15f, 15f); moveTo(17f, 10f); arcTo(7f, 7f, 0f, true, true, 3f, 10f); arcTo(7f, 7f, 0f, true, true, 17f, 10f); close()
-        }
-    }.build()
+import com.example.homever.viewmodel.ChatUiState
 
 @Composable
 fun MessagesScreen(
     onNavigateToDiscover: () -> Unit = {},
     onNavigateToRoom: () -> Unit = {},
-    onNavigateToProfile: () -> Unit = {}
+    onNavigateToInvites: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
+    state: ChatUiState = ChatUiState(),
+    onOpenConversation: (String) -> Unit = {},
+    onRetry: () -> Unit = {}
 ) {
+    var query by rememberSaveable { mutableStateOf("") }
+    val conversations = state.conversations.filter {
+        it.profile.displayName.contains(query, ignoreCase = true) ||
+            it.lastMessage?.content?.contains(query, ignoreCase = true) == true
+    }
+    val newConnections = conversations.filter { it.lastMessage == null }
+    val recent = conversations.filter { it.lastMessage != null }
     Scaffold(
         bottomBar = {
             AppBottomNavigation(
                 selectedItem = "messages",
                 onDiscoverClick = onNavigateToDiscover,
                 onRoomClick = onNavigateToRoom,
-                onMessagesClick = {},
+                onInvitesClick = onNavigateToInvites,
                 onProfileClick = onNavigateToProfile
             )
         }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White)
-                .padding(innerPadding)
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().consumeWindowInsets(padding),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = padding.calculateTopPadding() + 16.dp, bottom = padding.calculateBottomPadding() + 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "Tin nhắn",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = BluePrimary,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-            )
-            
-            // Search Bar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .background(BgGray, RoundedCornerShape(24.dp))
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(imageVector = MsgSearchIcon, contentDescription = "Search", modifier = Modifier.size(20.dp), tint = Color.Gray)
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Tìm cuộc trò chuyện...", color = Color(0xFFA0AAB0), fontSize = 14.sp)
+            item { Text("Tin nhắn", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = BluePrimary) }
+            item {
+                OutlinedTextField(value = query, onValueChange = { query = it }, placeholder = { Text("Tìm cuộc trò chuyện…") }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp))
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Segmented Tab
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(Color(0xFFDDF4FF), RoundedCornerShape(24.dp))
-                        .border(1.dp, BluePrimary, RoundedCornerShape(24.dp))
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Bạn cùng phòng", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = BluePrimary)
-                }
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(Color.White, RoundedCornerShape(24.dp))
-                        .border(1.dp, HomeverGrayBorder, RoundedCornerShape(24.dp))
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Phòng trọ", fontSize = 14.sp, color = TextGray)
+            if (state.loading) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+            state.error?.let { message ->
+                item {
+                    Text(message, color = MaterialTheme.colorScheme.error)
+                    TextButton(onClick = onRetry) { Text("Thử lại") }
                 }
             }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // New Connections
-            Text("KẾT NỐI MỚI", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextGray, modifier = Modifier.padding(horizontal = 24.dp))
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                val newConnections = listOf("Minh Anh", "Hải Nam", "Khánh Linh", "Duy Mạnh")
-                items(newConnections.size) { index ->
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .border(2.dp, BluePrimary, CircleShape)
-                                .padding(2.dp)
-                                .background(Color(0xFFE5E7EB), CircleShape)
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(newConnections[index], fontSize = 12.sp, fontWeight = FontWeight.Medium, color = HomeverTextDark)
-                    }
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Recent Chats
-            Text("TRÒ CHUYỆN GẦN ĐÂY", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextGray, modifier = Modifier.padding(horizontal = 24.dp))
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item { ChatListItem("Trần Thu Hà", "Mình cũng đang tìm phòng ở Thủ Đ...", "2 phút trước", unread = 2) }
-                item { ChatListItem("Lê Minh Tuấn", "Ok bạn nhé, vậy 7h tối nay tụi mình g...", "10:30") }
-                item { ChatListItem("Hoàng Yến", "Mình cũng thích phòng ở gần trung...", "Hôm qua") }
-                item { ChatListItem("Khánh Linh", "Bạn có muốn đi xem phòng chung v...", "24 Th1") }
-            }
-        }
-    }
-}
-
-@Composable
-fun ChatListItem(name: String, message: String, time: String, unread: Int = 0) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(16.dp))
-            .border(1.dp, HomeverGrayBorder, RoundedCornerShape(16.dp))
-            .padding(16.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // Avatar
-            Box(modifier = Modifier.size(50.dp)) {
-                Box(modifier = Modifier.fillMaxSize().background(Color(0xFFE5E7EB), CircleShape))
-                // Online dot
-                Box(modifier = Modifier.size(12.dp).align(Alignment.BottomEnd).background(HomeverGreen, CircleShape).border(2.dp, Color.White, CircleShape))
-            }
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = HomeverTextDark)
-                    Text(time, fontSize = 11.sp, color = TextGray)
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(message, fontSize = 13.sp, color = if (unread > 0) Color.Black else TextGray, fontWeight = if (unread > 0) FontWeight.Medium else FontWeight.Normal, maxLines = 1, modifier = Modifier.weight(1f))
-                    if (unread > 0) {
-                        Box(modifier = Modifier.padding(start = 8.dp).size(20.dp).background(BluePrimary, CircleShape), contentAlignment = Alignment.Center) {
-                            Text(unread.toString(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            if (newConnections.isNotEmpty()) {
+                item { Text("KẾT NỐI MỚI", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextGray) }
+                item {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        items(newConnections, key = { it.id }) { connection ->
+                            Column(
+                                Modifier.width(80.dp).clickable { onOpenConversation(connection.id) }.padding(vertical = 4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                ChatAvatar(connection.profile.displayName, connection.profile.avatarUrl, Modifier.size(60.dp))
+                                Spacer(Modifier.height(6.dp))
+                                Text(connection.profile.displayName, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            }
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(6.dp))
-                Box(modifier = Modifier.background(Color(0xFFD1FAE5), RoundedCornerShape(12.dp)).padding(horizontal = 8.dp, vertical = 2.dp)) {
-                    Text("Đã cùng quan tâm", fontSize = 10.sp, color = HomeverGreen, fontWeight = FontWeight.Medium)
+            }
+            if (recent.isNotEmpty()) {
+                item { Text("TRÒ CHUYỆN GẦN ĐÂY", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextGray) }
+                items(recent, key = { it.id }) { conversation ->
+                    ConversationRow(conversation) { onOpenConversation(conversation.id) }
+                }
+            }
+            if (conversations.isEmpty() && !state.loading && state.error == null) {
+                item {
+                    Text(
+                        if (query.isNotBlank()) "Không tìm thấy cuộc trò chuyện." else "Chưa có kết nối. Khi hai bạn cùng quan tâm, cuộc trò chuyện sẽ xuất hiện ở đây.",
+                        color = TextGray,
+                        modifier = Modifier.padding(vertical = 24.dp)
+                    )
                 }
             }
         }
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun MessagesScreenPreview() {
-    HomEverTheme {
-        MessagesScreen()
+private fun ConversationRow(conversation: ConversationSummary, onClick: () -> Unit) {
+    OutlinedCard(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            ChatAvatar(conversation.profile.displayName, conversation.profile.avatarUrl, Modifier.size(50.dp))
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(conversation.profile.displayName, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(conversation.lastMessage?.content.orEmpty(), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = TextGray)
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(chatTime(conversation.lastMessage?.createdAt), fontSize = 11.sp, color = TextGray)
+                if (conversation.unreadCount > 0) {
+                    Badge { Text(conversation.unreadCount.toString()) }
+                }
+            }
+        }
     }
 }

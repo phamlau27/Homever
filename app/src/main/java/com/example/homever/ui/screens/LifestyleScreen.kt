@@ -1,5 +1,7 @@
 package com.example.homever.ui.screens
 
+import com.example.homever.domain.model.LifestyleCriteria
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -617,7 +619,7 @@ fun LifestyleScreen(
                     coroutineScope.launch { scrollState.animateScrollTo(0) }
                 } else {
                     // Combine all answers cleanly
-                    val combinedTraits = listOf(
+                    val combinedTraits = LifestyleCriteria.encode(listOf(
                         genderPref,
                         schedulePref,
                         noisePref,
@@ -629,7 +631,7 @@ fun LifestyleScreen(
                         cookingPref,
                         responsibilityPref,
                         costSharingPref
-                    ).filter { it.isNotBlank() }.joinToString(", ")
+                    ))
 
                     onNext(combinedTraits)
                 }
@@ -707,33 +709,32 @@ fun LifestyleQuestionCard(
 
             Spacer(Modifier.height(16.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                rows.forEach { rowItems ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        rowItems.forEach { text ->
-                            val isSelected = text.isNotBlank() && text == selectedValue
-                            Box(
-                                modifier = Modifier
-                                    .background(
-                                        color = if (isSelected) Color(0xFFDDF4FF) else Color.White,
-                                        shape = RoundedCornerShape(20.dp)
-                                    )
-                                    .border(
-                                        width = if (isSelected) 1.5.dp else 1.dp,
-                                        color = if (isSelected) BluePrimary else Color(0xFFE5E7EB),
-                                        shape = RoundedCornerShape(20.dp)
-                                    )
-                                    .clickable { onSelect(text) }
-                                    .padding(horizontal = 16.dp, vertical = 9.dp)
-                            ) {
-                                Text(
-                                    text = text,
-                                    fontSize = 13.sp,
-                                    color = if (isSelected) BluePrimary else Color(0xFF4B5563),
-                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-                                )
-                            }
-                        }
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                rows.flatten().forEach { text ->
+                    val isSelected = text.isNotBlank() && text == selectedValue
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = if (isSelected) Color(0xFFDDF4FF) else Color.White,
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                            .border(
+                                width = if (isSelected) 1.5.dp else 1.dp,
+                                color = if (isSelected) BluePrimary else Color(0xFFE5E7EB),
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                            .clickable { onSelect(text) }
+                            .padding(horizontal = 16.dp, vertical = 9.dp)
+                    ) {
+                        Text(
+                            text = LifestyleCriteria.labels("${title.removeSuffix("?")}: $text").single(),
+                            fontSize = 13.sp,
+                            color = if (isSelected) BluePrimary else Color(0xFF4B5563),
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                        )
                     }
                 }
             }

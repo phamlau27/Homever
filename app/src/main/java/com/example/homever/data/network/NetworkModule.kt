@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 object NetworkModule {
 
     // Change this to your production base URL before release.
-    private const val BASE_URL = "http://192.168.56.1:3000/v1/"
+    private const val BASE_URL = "http://10.0.2.2:3000/v1/"
 
     private var _api: HomeverApi? = null
 
@@ -42,7 +42,8 @@ object NetworkModule {
         if (existing != null) return existing
 
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            redactHeader("Authorization")
+            level = HttpLoggingInterceptor.Level.BASIC
         }
 
         val okHttpClient = OkHttpClient.Builder()

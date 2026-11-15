@@ -296,6 +296,9 @@ export class MatchingService {
     const allCandidates = await this.prisma.profile.findMany({
       where: {
         cognitoSub: { not: cognitoSub },
+        receivedInterests: { none: { senderId: currentUser.id } },
+        firstConversations: { none: { secondProfileId: currentUser.id } },
+        secondConversations: { none: { firstProfileId: currentUser.id } },
       },
     });
 

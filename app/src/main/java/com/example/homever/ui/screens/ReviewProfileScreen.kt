@@ -1,5 +1,7 @@
 package com.example.homever.ui.screens
 
+import com.example.homever.domain.model.LifestyleCriteria
+
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -238,21 +240,22 @@ fun ReviewProfileScreen(
             )
             Spacer(Modifier.height(14.dp))
 
-            val traitsList = lifestyle.split(",").map { it.trim() }.filter { it.isNotBlank() }
+            val traitsList = LifestyleCriteria.labels(lifestyle)
             if (traitsList.isNotEmpty()) {
-                traitsList.chunked(3).forEach { rowItems ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        rowItems.forEach { trait ->
-                            Box(
-                                modifier = Modifier
-                                    .background(BgGray, RoundedCornerShape(16.dp))
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Text(trait, fontSize = 12.sp, color = TextGray)
-                            }
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    traitsList.forEach { trait ->
+                        Box(
+                            modifier = Modifier
+                                .background(BgGray, RoundedCornerShape(16.dp))
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(trait, fontSize = 12.sp, color = TextGray)
                         }
                     }
-                    Spacer(Modifier.height(8.dp))
                 }
             } else {
                 Text("Chưa chọn lối sống", fontSize = 12.sp, color = TextGray)

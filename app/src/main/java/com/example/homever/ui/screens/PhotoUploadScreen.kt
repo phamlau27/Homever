@@ -1,5 +1,7 @@
 package com.example.homever.ui.screens
 
+import com.example.homever.domain.model.LifestyleCriteria
+
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -115,8 +117,7 @@ fun PhotoUploadScreen(
 
     // Phân tích danh sách các tags lối sống
     val tagsList = remember(lifestyle) {
-        val parsed = lifestyle.split(",", ";").map { it.trim() }.filter { it.isNotBlank() }
-        if (parsed.isNotEmpty()) parsed else listOf("Cú đêm", "Gọn gàng", "Không hút thuốc", "Thích nấu ăn", "Cần riêng tư")
+        LifestyleCriteria.labels(lifestyle)
     }
 
     val locationAndBudget = remember(location, budget) {

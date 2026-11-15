@@ -1,5 +1,7 @@
 package com.example.homever.ui.screens
 
+import com.example.homever.domain.model.LifestyleCriteria
+
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -128,6 +130,7 @@ fun PersonalProfileScreen(
     onSettingsClick: () -> Unit = {},
     onNavigateToDiscover: () -> Unit = {},
     onNavigateToRoom: () -> Unit = {},
+    onNavigateToInvites: () -> Unit = {},
     onNavigateToMessages: () -> Unit = {}
 ) {
     val displayHeader = listOfNotNull(
@@ -167,7 +170,8 @@ fun PersonalProfileScreen(
                 onProfileClick = {},
                 onDiscoverClick = onNavigateToDiscover,
                 onRoomClick = onNavigateToRoom,
-                onMessagesClick = onNavigateToMessages
+                onMessagesClick = onNavigateToMessages,
+                onInvitesClick = onNavigateToInvites
             )
         }
     ) { innerPadding ->
@@ -515,13 +519,13 @@ fun PersonalProfileScreen(
                 // Prompt 2: Ở cùng mình sẽ như thế nào? (Green card)
                 PromptIntroCard(
                     title = "Ở cùng mình sẽ như thế nào?",
-                    subtitle = if (lifestyle.isNotBlank()) lifestyle else "Chia sẻ điều thú vị khi trở thành bạn cùng nhà của bạn.",
+                    subtitle = if (lifestyle.isNotBlank()) LifestyleCriteria.displayText(lifestyle) else "Chia sẻ điều thú vị khi trở thành bạn cùng nhà của bạn.",
                     iconBg = Color(0xFFDCFCE7),
                     icon = HouseIcon,
                     cardBg = Color(0xFFF0FDF4),
                     onEditClick = {
                         editingField = "lifestyle"
-                        editNoteInput = lifestyle
+                        editNoteInput = LifestyleCriteria.note(lifestyle)
                     }
                 )
 
@@ -530,7 +534,7 @@ fun PersonalProfileScreen(
                 // Prompt 3: Roommate mong muốn (Warm peach card)
                 PromptIntroCard(
                     title = "Mình đang tìm một roommate như thế nào?",
-                    subtitle = if (traits.isNotBlank()) traits else "Kể về người bạn cùng nhà mà bạn mong muốn.",
+                    subtitle = if (traits.isNotBlank()) LifestyleCriteria.displayText(traits) else "Kể về người bạn cùng nhà mà bạn mong muốn.",
                     iconBg = Color(0xFFFFEDD5),
                     icon = PeopleIcon,
                     cardBg = Color(0xFFFFF7ED),
@@ -591,9 +595,9 @@ fun PersonalProfileScreen(
                     Button(
                         onClick = {
                             when (editingField) {
-                                "bio" -> onSaveNotes(editNoteInput, lifestyle, traits)
+                                "bio" -> onSaveNotes(editNoteInput, LifestyleCriteria.note(lifestyle), traits)
                                 "lifestyle" -> onSaveNotes(bio, editNoteInput, traits)
-                                "traits" -> onSaveNotes(bio, lifestyle, editNoteInput)
+                                "traits" -> onSaveNotes(bio, LifestyleCriteria.note(lifestyle), editNoteInput)
                             }
                             editingField = null
                         },

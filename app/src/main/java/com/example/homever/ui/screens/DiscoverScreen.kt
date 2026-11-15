@@ -1,7 +1,6 @@
 package com.example.homever.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -10,24 +9,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import com.example.homever.data.network.NetworkModule
+import com.example.homever.viewmodel.DiscoveryUiState
 import com.example.homever.ui.theme.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 private val OrangePrimary = Color(0xFFF97316)
 
@@ -80,22 +72,6 @@ val DiscoverPersonIcon: ImageVector
         }
     }.build()
 
-private val RefreshIcon: ImageVector
-    get() = ImageVector.Builder(name = "Refresh", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f).apply {
-        path(fill = SolidColor(Color.White)) {
-            moveTo(17.65f, 6.35f); arcTo(7.958f, 7.958f, 0f, false, false, 12f, 4f); arcTo(8f, 8f, 0f, false, false, 4f, 12f); arcTo(8f, 8f, 0f, false, false, 12f, 20f); curveTo(15.73f, 20f, 18.84f, 17.45f, 19.73f, 14f); lineTo(17.65f, 14f); curveTo(16.83f, 16.33f, 14.61f, 18f, 12f, 18f); arcTo(6f, 6f, 0f, false, true, 6f, 12f); arcTo(6f, 6f, 0f, false, true, 12f, 6f); curveTo(13.66f, 6f, 15.14f, 6.69f, 16.22f, 7.78f); lineTo(13f, 11f); lineTo(20f, 11f); lineTo(20f, 4f); lineTo(17.65f, 6.35f); close()
-        }
-    }.build()
-
-private val InfoIcon: ImageVector
-    get() = ImageVector.Builder(name = "Info", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f).apply {
-        path(fill = SolidColor(Color.White)) {
-            moveTo(12f, 2f); arcTo(10f, 10f, 0f, true, false, 12f, 22f); arcTo(10f, 10f, 0f, true, false, 12f, 2f); close()
-            moveTo(11f, 7f); lineTo(13f, 7f); lineTo(13f, 9f); lineTo(11f, 9f); close()
-            moveTo(11f, 11f); lineTo(13f, 11f); lineTo(13f, 17f); lineTo(11f, 17f); close()
-        }
-    }.build()
-
 data class RoommateCandidate(
     val name: String,
     val age: Int,
@@ -110,9 +86,12 @@ data class RoommateCandidate(
     val lifestyle: String? = null,
     val traits: String? = null,
     val needType: String? = null,
-    val photos: List<String> = emptyList()
+    val photos: List<String> = emptyList(),
+    val id: String = ""
 )
 
+// Sample candidates with realistic high-quality photos (2 photos each)
+// and elegant neutral fallback gradients (Slate / Charcoal / Warm Stone - NOT pure blue)
 val sampleCandidates = listOf(
     RoommateCandidate(
         name = "Trần Thu Hà",
@@ -122,7 +101,8 @@ val sampleCandidates = listOf(
         budget = "3 - 4 triệu/tháng",
         tags = listOf("Cú đêm", "Gọn gàng", "Không hút thuốc", "Thích nấu ăn", "Cần riêng tư", "Rất yên tĩnh", "Không nuôi thú cưng", "Thỉnh thoảng tiếp khách", "Chia đều chi phí", "Tự giác việc chung"),
         bio = "Thích không gian yên tĩnh học tập, nấu ăn cuối tuần.",
-        gradientColors = listOf(Color(0xFF3B82F6), Color(0xFF1E3A8A))
+        avatarUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1000&q=80,https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1000&q=80",
+        gradientColors = listOf(Color(0xFF334155), Color(0xFF1E293B))
     ),
     RoommateCandidate(
         name = "Nguyễn Hoàng Nam",
@@ -132,7 +112,8 @@ val sampleCandidates = listOf(
         budget = "4 - 6 triệu/tháng",
         tags = listOf("Dậy sớm", "Rất sạch sẽ", "Yêu động vật", "Không hút thuốc", "Thoải mái riêng tư", "Nấu ăn cuối tuần", "Thích phân công", "Linh hoạt chi phí"),
         bio = "Làm việc hybrid, hòa đồng, ngăn nắp và tôn trọng riêng tư.",
-        gradientColors = listOf(Color(0xFF10B981), Color(0xFF065F46))
+        avatarUrl = "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=1000&q=80,https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1000&q=80",
+        gradientColors = listOf(Color(0xFF374151), Color(0xFF111827))
     ),
     RoommateCandidate(
         name = "Lê Thảo My",
@@ -142,7 +123,8 @@ val sampleCandidates = listOf(
         budget = "2.5 - 3.5 triệu/tháng",
         tags = listOf("Thích yên tĩnh", "Sống ngăn nắp", "Thích nấu ăn", "Không hút thuốc", "Có thể ở cùng thú cưng", "Hiếm khi có khách", "Chia đều chi phí", "Rất chủ động việc chung"),
         bio = "Mong tìm bạn cùng phòng vui vẻ, tử tế để ở lâu dài.",
-        gradientColors = listOf(Color(0xFF8B5CF6), Color(0xFF4C1D95))
+        avatarUrl = "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1000&q=80,https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=1000&q=80",
+        gradientColors = listOf(Color(0xFF4A4E69), Color(0xFF22223B))
     ),
     RoommateCandidate(
         name = "Phạm Quốc Bảo",
@@ -152,395 +134,122 @@ val sampleCandidates = listOf(
         budget = "3.5 - 5 triệu/tháng",
         tags = listOf("Linh hoạt", "Cởi mở", "Thích âm nhạc", "Cú đêm", "Khá gọn gàng", "Không hút thuốc", "Thích sinh hoạt chung", "Chủ yếu mua ngoài"),
         bio = "Hay vẽ tranh và nghe nhạc nhẹ nhàng, gọn gàng văn minh.",
-        gradientColors = listOf(Color(0xFFF59E0B), Color(0xFF92400E))
+        avatarUrl = "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1000&q=80,https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=1000&q=80",
+        gradientColors = listOf(Color(0xFF57534E), Color(0xFF1C1917))
     )
 )
 
+/**
+ * Determines the "page" count for the candidate card.
+ * Page 0 = first photo + basic info + first 3 tags.
+ * Page 1 = second photo (if available) OR same photo + extended tags (up to 10) + bio.
+ * The user taps the RIGHT half to go forward, LEFT half to go back.
+ */
 @Composable
 fun DiscoverScreen(
     modifier: Modifier = Modifier,
+    state: DiscoveryUiState = DiscoveryUiState(),
+    onRefresh: () -> Unit = {},
+    onPrevious: () -> Unit = {},
+    onSkip: () -> Unit = {},
+    onInterest: (String) -> Unit = {},
+    onPageChange: (Int) -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToRoom: () -> Unit = {},
+    onNavigateToInvites: () -> Unit = {},
     onNavigateToMessages: () -> Unit = {},
     onNavigateToUserDetail: (RoommateCandidate) -> Unit = {}
 ) {
-    var candidates by remember { mutableStateOf(sampleCandidates) }
-    var currentIndex by remember { mutableStateOf(0) }
-    var currentPhotoIndex by remember { mutableStateOf(0) }
-    var isLoading by remember { mutableStateOf(true) }
-    val scope = rememberCoroutineScope()
-
-    // Reset photo index when switching candidates
-    LaunchedEffect(currentIndex) {
-        currentPhotoIndex = 0
+    val candidates = remember(state.candidates) {
+        state.candidates.map { it.profile.asRoommateCandidate(it.score.percentage) }
     }
-
-    fun fetchCandidates() {
-        isLoading = true
-        scope.launch(Dispatchers.IO) {
-            try {
-                val response = NetworkModule.api.getMatchingCandidates(limit = 20)
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (!body.isNullOrEmpty()) {
-                        val colorPalettes = listOf(
-                            listOf(Color(0xFF3B82F6), Color(0xFF1E3A8A)),
-                            listOf(Color(0xFF10B981), Color(0xFF065F46)),
-                            listOf(Color(0xFF8B5CF6), Color(0xFF4C1D95)),
-                            listOf(Color(0xFFF59E0B), Color(0xFF92400E))
-                        )
-                        val mapped = body.mapIndexed { idx, item ->
-                            val p = item.profile
-                            val tagsList = mutableListOf<String>()
-                            if (!p.lifestyle.isNullOrBlank()) tagsList.addAll(p.lifestyle.split(";", ",").map { it.trim() }.filter { it.isNotBlank() })
-                            if (!p.traits.isNullOrBlank()) tagsList.addAll(p.traits.split(";", ",").map { it.trim() }.filter { it.isNotBlank() })
-                            if (tagsList.isEmpty()) tagsList.addAll(listOf("Linh hoạt", "Thân thiện"))
-
-                            RoommateCandidate(
-                                name = p.displayName.ifBlank { "Ứng viên ${idx + 1}" },
-                                age = if (p.age > 0) p.age else 22,
-                                occupation = p.occupation.ifBlank { "Sinh viên / Đi làm" },
-                                location = p.location ?: "TP.HCM",
-                                budget = p.budget ?: "Thỏa thuận",
-                                tags = tagsList,
-                                bio = p.bio ?: "Tìm bạn cùng phòng hòa đồng, tôn trọng không gian chung.",
-                                matchPercentage = item.score.percentage,
-                                gradientColors = colorPalettes[idx % colorPalettes.size],
-                                avatarUrl = p.avatarUrl,
-                                lifestyle = p.lifestyle,
-                                traits = p.traits,
-                                needType = p.needType
-                            )
-                        }
-                        withContext(Dispatchers.Main) {
-                            candidates = mapped
-                            currentIndex = 0
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                // Giữ sampleCandidates nếu lỗi hoặc offline
-            } finally {
-                withContext(Dispatchers.Main) {
-                    isLoading = false
-                }
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        fetchCandidates()
-    }
-
-    val candidate = candidates.getOrElse(currentIndex) { sampleCandidates[0] }
-
-    // Collect all candidate photos: avatarUrl + any additional photos
-    val candidatePhotos = remember(candidate) {
-        val list = mutableListOf<String>()
-        if (!candidate.avatarUrl.isNullOrBlank()) {
-            list.addAll(candidate.avatarUrl.split(",").map { it.trim() }.filter { it.isNotBlank() })
-        }
-        list.addAll(candidate.photos.filter { it.isNotBlank() })
-        list.distinct()
-    }
-
-    // Determine how many tags to display based on candidate criteria:
-    // If user has written a bio -> display up to 10 criteria
-    // Otherwise 5 criteria per 2 photos
-    val displayTags = remember(candidate, candidatePhotos) {
-        val count = if (candidate.bio.isNotBlank()) {
-            10
-        } else if (candidatePhotos.size >= 2) {
-            5
-        } else {
-            3
-        }
-        candidate.tags.take(count)
-    }
+    val currentIndex = state.currentIndex
+    val isLoading = state.isLoading
 
     Scaffold(
+        modifier = modifier,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             AppBottomNavigation(
                 selectedItem = "discover",
                 onDiscoverClick = {},
                 onRoomClick = onNavigateToRoom,
+                onInvitesClick = onNavigateToInvites,
                 onMessagesClick = onNavigateToMessages,
                 onProfileClick = onNavigateToProfile
             )
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            // Background Visual for Roommate Candidate
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Brush.verticalGradient(candidate.gradientColors)),
-                contentAlignment = Alignment.Center
+        val candidate = candidates.getOrNull(currentIndex)
+        if (candidate == null) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(innerPadding).padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val currentPhotoUrl = candidatePhotos.getOrNull(currentPhotoIndex)
-                    ?: candidate.avatarUrl?.split(",")?.firstOrNull { it.isNotBlank() }
-                if (!currentPhotoUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = currentPhotoUrl,
-                        contentDescription = candidate.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
+                if (isLoading) {
+                    CircularProgressIndicator()
                 } else {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(120.dp)
-                                .background(Color.White.copy(alpha = 0.2f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = candidate.name.take(1).uppercase().ifBlank { "U" },
-                                color = Color.White,
-                                fontSize = 48.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = candidate.name,
-                            color = Color.White,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                    Text(state.errorMessage ?: "Bạn đã xem hết hồ sơ hiện có.")
+                    Spacer(Modifier.height(16.dp))
+                    Button(onClick = onRefresh) { Text("Tải lại") }
+                    if (currentIndex > 0) {
+                        TextButton(onClick = onPrevious) { Text("Xem thẻ trước") }
                     }
                 }
             }
-
-            // Interactive Tap Zones:
-            // Tap left half of screen -> switch to next photo (per user request)
-            // Tap right half of screen -> switch to previous photo (or next if desired)
-            Row(modifier = Modifier.fillMaxSize()) {
-                // Left half tap zone: next photo
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clickable(
-                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            if (candidatePhotos.isNotEmpty()) {
-                                currentPhotoIndex = (currentPhotoIndex + 1) % candidatePhotos.size
-                            }
-                        }
-                )
-
-                // Right half tap zone: previous photo
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clickable(
-                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            if (candidatePhotos.isNotEmpty()) {
-                                currentPhotoIndex = if (currentPhotoIndex - 1 < 0) candidatePhotos.size - 1 else currentPhotoIndex - 1
-                            }
-                        }
-                )
-            }
-
-            // Photo indicator dots (if multiple photos available)
-            if (candidatePhotos.size > 1) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 80.dp, start = 24.dp, end = 24.dp)
-                        .align(Alignment.TopCenter),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    candidatePhotos.indices.forEach { idx ->
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(4.dp)
-                                .background(
-                                    color = if (idx == currentPhotoIndex) Color.White else Color.White.copy(alpha = 0.4f),
-                                    shape = RoundedCornerShape(2.dp)
-                                )
-                        )
-                    }
-                }
-            }
-
-            // Top Bar
+            return@Scaffold
+        }
+        ProfileDiscoveryCard(
+            candidate = candidate,
+            page = state.cardPage,
+            onPageChange = onPageChange,
+            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
+            onOpenProfile = { onNavigateToUserDetail(candidate) },
+            errorMessage = state.errorMessage
+        ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 20.dp)
-                    .align(Alignment.TopCenter),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Homever",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                ActionButton(
+                    icon = UndoIcon,
+                    size = 48.dp,
+                    iconColor = Color.Black,
+                    bgColor = Color.White,
+                    label = "Quay lại",
+                    onClick = {
+                        onPrevious()
+                    }
                 )
-
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(Color.Black.copy(alpha = 0.35f), CircleShape)
-                        .clickable { fetchCandidates() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            imageVector = RefreshIcon,
-                            contentDescription = "Đồng bộ / Làm mới",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                ActionButton(
+                    icon = CloseIcon,
+                    size = 64.dp,
+                    iconColor = Color.Black,
+                    bgColor = Color.White,
+                    label = "Bỏ qua",
+                    onClick = {
+                        onSkip()
                     }
-                }
-            }
-
-            // Gradient Overlay at Bottom
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(440.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.88f))))
-                    .padding(horizontal = 24.dp, vertical = 20.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .clickable { onNavigateToUserDetail(candidate) }
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("${candidate.name}, ${candidate.age}", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Spacer(Modifier.width(10.dp))
-                            Box(
-                                modifier = Modifier
-                                    .background(Color(0xFF10B981), RoundedCornerShape(12.dp))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    "${candidate.matchPercentage}% Hợp",
-                                    color = Color.White,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-
-                        // Info Button to view User Profile Detail
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .border(width = 1.dp, color = Color.White.copy(alpha = 0.5f), shape = CircleShape)
-                                .background(Color.Black.copy(alpha = 0.35f), CircleShape)
-                                .clickable { onNavigateToUserDetail(candidate) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = InfoIcon,
-                                contentDescription = "Xem thông tin người dùng",
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(candidate.occupation, fontSize = 14.sp, color = Color.White.copy(alpha = 0.9f))
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text("${candidate.location} • ${candidate.budget}", fontSize = 14.sp, color = Color.White.copy(alpha = 0.9f))
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(candidate.bio, fontSize = 12.sp, color = Color.White.copy(alpha = 0.75f), maxLines = 2)
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Criteria Tags: Chunked into rows of up to 3 pills
-                    displayTags.chunked(3).take(3).forEach { rowTags ->
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(bottom = 6.dp)
-                        ) {
-                            rowTags.forEach { tag ->
-                                TagPill(tag)
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        ActionButton(
-                            icon = UndoIcon,
-                            size = 48.dp,
-                            iconColor = Color.Black,
-                            bgColor = Color.White,
-                            label = "Quay lại",
-                            onClick = {
-                                if (candidates.isNotEmpty()) {
-                                    currentIndex = (currentIndex - 1 + candidates.size) % candidates.size
-                                }
-                            }
-                        )
-                        ActionButton(
-                            icon = CloseIcon,
-                            size = 64.dp,
-                            iconColor = Color.Black,
-                            bgColor = Color.White,
-                            label = "Bỏ qua",
-                            onClick = {
-                                if (candidates.isNotEmpty()) {
-                                    currentIndex = (currentIndex + 1) % candidates.size
-                                }
-                            }
-                        )
-                        ActionButton(
-                            icon = HeartIcon,
-                            size = 64.dp,
-                            iconColor = Color.White,
-                            bgColor = OrangePrimary,
-                            label = "Quan tâm",
-                            onClick = {
-                                if (candidates.isNotEmpty()) {
-                                    currentIndex = (currentIndex + 1) % candidates.size
-                                }
-                            }
-                        )
-                        ActionButton(
-                            icon = ChatIcon,
-                            size = 48.dp,
-                            iconColor = Color.White,
-                            bgColor = BluePrimary,
-                            label = "Nhắn tin",
-                            onClick = {
-                                onNavigateToMessages()
-                            }
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
+                )
+                ActionButton(
+                    icon = HeartIcon,
+                    size = 64.dp,
+                    iconColor = Color.White,
+                    bgColor = OrangePrimary,
+                    label = if (state.sendingProfileId == candidate.id) "Đang gửi…" else "Quan tâm",
+                    enabled = state.sendingProfileId == null,
+                    onClick = { onInterest(candidate.id) }
+                )
+                ActionButton(
+                    icon = ChatIcon,
+                    size = 48.dp,
+                    iconColor = Color.White,
+                    bgColor = BluePrimary,
+                    label = "Nhắn tin",
+                    onClick = { onNavigateToMessages() }
+                )
             }
         }
     }
@@ -550,10 +259,16 @@ fun DiscoverScreen(
 fun TagPill(text: String) {
     Box(
         modifier = Modifier
-            .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(16.dp))
+            .background(Color.White.copy(alpha = 0.92f), RoundedCornerShape(16.dp))
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
-        Text(text, fontSize = 12.sp, color = Color(0xFF1F2937), fontWeight = FontWeight.Medium)
+        Text(
+            text = text,
+            fontSize = 12.sp,
+            color = Color(0xFF1F2937),
+            fontWeight = FontWeight.Medium,
+            maxLines = 3
+        )
     }
 }
 
@@ -564,11 +279,12 @@ fun ActionButton(
     iconColor: Color,
     bgColor: Color,
     label: String,
+    enabled: Boolean = true,
     onClick: () -> Unit = {}
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
+        modifier = Modifier.clickable(enabled = enabled) { onClick() }
     ) {
         Box(
             modifier = Modifier
@@ -592,72 +308,86 @@ fun AppBottomNavigation(
     onMessagesClick: () -> Unit = {},
     onProfileClick: () -> Unit = {}
 ) {
-    NavigationBar(containerColor = Color.White, tonalElevation = 8.dp) {
-        NavigationBarItem(
-            icon = { Icon(FlameIcon, contentDescription = null, modifier = Modifier.size(24.dp)) },
-            label = { Text("Khám phá", fontSize = 10.sp) },
-            selected = selectedItem == "discover",
-            onClick = onDiscoverClick,
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = BluePrimary,
-                selectedTextColor = BluePrimary,
-                unselectedIconColor = Color.Gray,
-                unselectedTextColor = Color.Gray,
-                indicatorColor = Color.White
+    Column(Modifier.background(Color.White).navigationBarsPadding()) {
+        NavigationBar(
+            modifier = Modifier.height(64.dp),
+            containerColor = Color.White,
+            tonalElevation = 8.dp,
+            windowInsets = WindowInsets(0, 0, 0, 0)
+        ) {
+            NavigationBarItem(
+                icon = { Icon(FlameIcon, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                label = { Text("Khám phá", fontSize = 10.sp) },
+                selected = selectedItem == "discover",
+                onClick = onDiscoverClick,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = BluePrimary,
+                    selectedTextColor = BluePrimary,
+                    unselectedIconColor = Color.Gray,
+                    unselectedTextColor = Color.Gray,
+                    indicatorColor = Color.White
+                )
             )
-        )
-        NavigationBarItem(
-            icon = { Icon(DiscoverHomeIcon, contentDescription = null, modifier = Modifier.size(24.dp)) },
-            label = { Text("Phòng", fontSize = 10.sp) },
-            selected = selectedItem == "room",
-            onClick = onRoomClick,
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = BluePrimary,
-                selectedTextColor = BluePrimary,
-                unselectedIconColor = Color.Gray,
-                unselectedTextColor = Color.Gray,
-                indicatorColor = Color.White
+            NavigationBarItem(
+                icon = { Icon(DiscoverHomeIcon, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                label = { Text("Phòng", fontSize = 10.sp) },
+                selected = selectedItem == "room",
+                onClick = onRoomClick,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = BluePrimary,
+                    selectedTextColor = BluePrimary,
+                    unselectedIconColor = Color.Gray,
+                    unselectedTextColor = Color.Gray,
+                    indicatorColor = Color.White
+                )
             )
-        )
-        NavigationBarItem(
-            icon = { Icon(HeartIcon, contentDescription = null, modifier = Modifier.size(24.dp)) },
-            label = { Text("Quan tâm", fontSize = 10.sp) },
-            selected = selectedItem == "invites",
-            onClick = onInvitesClick,
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = BluePrimary,
-                selectedTextColor = BluePrimary,
-                unselectedIconColor = Color.Gray,
-                unselectedTextColor = Color.Gray,
-                indicatorColor = Color.White
+            NavigationBarItem(
+                icon = { Icon(HeartIcon, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                label = { Text("Quan tâm", fontSize = 10.sp) },
+                selected = selectedItem == "invites",
+                onClick = onInvitesClick,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = BluePrimary,
+                    selectedTextColor = BluePrimary,
+                    unselectedIconColor = Color.Gray,
+                    unselectedTextColor = Color.Gray,
+                    indicatorColor = Color.White
+                )
             )
-        )
-        NavigationBarItem(
-            icon = { Icon(ChatIcon, contentDescription = null, modifier = Modifier.size(24.dp)) },
-            label = { Text("Tin nhắn", fontSize = 10.sp) },
-            selected = selectedItem == "messages",
-            onClick = onMessagesClick,
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = BluePrimary,
-                selectedTextColor = BluePrimary,
-                unselectedIconColor = Color.Gray,
-                unselectedTextColor = Color.Gray,
-                indicatorColor = Color.White
+            NavigationBarItem(
+                icon = {
+                    val unread = LocalChatUnreadCount.current
+                    BadgedBox(badge = {
+                        if (unread > 0) Badge { Text(if (unread > 99) "99+" else unread.toString()) }
+                    }) {
+                        Icon(ChatIcon, contentDescription = if (unread > 0) "$unread tin nhắn chưa đọc" else "Tin nhắn", modifier = Modifier.size(24.dp))
+                    }
+                },
+                label = { Text("Tin nhắn", fontSize = 10.sp) },
+                selected = selectedItem == "messages",
+                onClick = onMessagesClick,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = BluePrimary,
+                    selectedTextColor = BluePrimary,
+                    unselectedIconColor = Color.Gray,
+                    unselectedTextColor = Color.Gray,
+                    indicatorColor = Color.White
+                )
             )
-        )
-        NavigationBarItem(
-            icon = { Icon(DiscoverPersonIcon, contentDescription = null, modifier = Modifier.size(24.dp)) },
-            label = { Text("Hồ sơ", fontSize = 10.sp) },
-            selected = selectedItem == "profile",
-            onClick = onProfileClick,
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = BluePrimary,
-                selectedTextColor = BluePrimary,
-                unselectedIconColor = Color.Gray,
-                unselectedTextColor = Color.Gray,
-                indicatorColor = Color.White
+            NavigationBarItem(
+                icon = { Icon(DiscoverPersonIcon, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                label = { Text("Hồ sơ", fontSize = 10.sp) },
+                selected = selectedItem == "profile",
+                onClick = onProfileClick,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = BluePrimary,
+                    selectedTextColor = BluePrimary,
+                    unselectedIconColor = Color.Gray,
+                    unselectedTextColor = Color.Gray,
+                    indicatorColor = Color.White
+                )
             )
-        )
+        }
     }
 }
 
@@ -665,6 +395,26 @@ fun AppBottomNavigation(
 @Composable
 fun DiscoverScreenPreview() {
     HomEverTheme {
-        DiscoverScreen()
+        DiscoverScreen(
+            state = DiscoveryUiState(
+                candidates = sampleCandidates.mapIndexed { index, candidate ->
+                    com.example.homever.data.network.CandidateResponse(
+                        com.example.homever.data.network.UserProfile(
+                            id = "preview-$index",
+                            displayName = candidate.name,
+                            age = candidate.age,
+                            occupation = candidate.occupation,
+                            location = candidate.location,
+                            budget = candidate.budget,
+                            lifestyle = candidate.tags.joinToString("; "),
+                            bio = candidate.bio,
+                            avatarUrl = candidate.avatarUrl
+                        ),
+                        com.example.homever.data.network.MatchingScore(percentage = candidate.matchPercentage)
+                    )
+                },
+                candidatesLoaded = true
+            )
+        )
     }
 }

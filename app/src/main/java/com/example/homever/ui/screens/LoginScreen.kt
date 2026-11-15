@@ -1,5 +1,6 @@
 package com.example.homever.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -44,21 +45,6 @@ val GoogleIcon: ImageVector
         }
     }.build()
 
-// ── Homever logo "H" mark ──────────────────────────────────────────────────
-private val LoginLogoIcon: ImageVector
-    get() = ImageVector.Builder(
-        name = "HomeverLogo",
-        defaultWidth = 32.dp, defaultHeight = 32.dp,
-        viewportWidth = 32f, viewportHeight = 32f
-    ).apply {
-        path(fill = SolidColor(Color.White)) {
-            moveTo(6f, 4f); lineTo(6f, 28f); lineTo(10f, 28f); lineTo(10f, 18f)
-            lineTo(22f, 18f); lineTo(22f, 28f); lineTo(26f, 28f); lineTo(26f, 4f)
-            lineTo(22f, 4f); lineTo(22f, 14f); lineTo(10f, 14f); lineTo(10f, 4f)
-            close()
-        }
-    }.build()
-
 @Composable
 fun LoginScreen(
     modifier: Modifier = Modifier,
@@ -69,27 +55,14 @@ fun LoginScreen(
     onGoogleLoginClick: () -> Unit = {}
 ) {
     Box(
-        modifier = modifier.fillMaxSize()
-    ) {
-        // ── Background gradient ────────────────────────────────────────────
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.45f)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(HomeverBlueDark, HomeverBlue)
-                    )
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFFECF2FF), Color(0xFFF8FAFF), Color.White)
                 )
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.55f)
-                .align(Alignment.BottomCenter)
-                .background(HomeverGray)
-        )
-
+            )
+    ) {
         // ── Content ────────────────────────────────────────────────────────
         Column(
             modifier = Modifier
@@ -100,21 +73,22 @@ fun LoginScreen(
         ) {
 
             // ── Hero section ───────────────────────────────────────────────
-            Spacer(Modifier.height(48.dp))
+            Spacer(Modifier.height(36.dp))
 
-            // Logo badge
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(20.dp)),
-                contentAlignment = Alignment.Center
+            Surface(
+                modifier = Modifier.size(104.dp),
+                shape = RoundedCornerShape(30.dp),
+                color = SplashBlue,
+                shadowElevation = 2.dp
             ) {
-                Icon(
-                    imageVector = LoginLogoIcon,
-                    contentDescription = "Homever",
-                    tint = Color.White,
-                    modifier = Modifier.size(40.dp)
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = HomeverSplashLogoIcon,
+                        contentDescription = "Logo Homever",
+                        tint = Color.White,
+                        modifier = Modifier.size(96.dp)
+                    )
+                }
             }
 
             Spacer(Modifier.height(20.dp))
@@ -123,7 +97,7 @@ fun LoginScreen(
                 text = "Homever",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color.White,
+                color = HomeverBlueDark,
                 letterSpacing = (-0.5).sp
             )
 
@@ -132,13 +106,13 @@ fun LoginScreen(
             Text(
                 text = "Tìm bạn cùng phòng lý tưởng\nvà không gian sống như ở nhà.",
                 fontSize = 15.sp,
-                color = Color.White.copy(alpha = 0.85f),
+                color = HomeverTextGray,
                 textAlign = TextAlign.Center,
                 lineHeight = 22.sp,
                 modifier = Modifier.padding(horizontal = 32.dp)
             )
 
-            Spacer(Modifier.height(44.dp))
+            Spacer(Modifier.height(32.dp))
 
             // ── Card ──────────────────────────────────────────────────────
             Card(
@@ -147,7 +121,8 @@ fun LoginScreen(
                     .padding(horizontal = 20.dp),
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                border = BorderStroke(1.dp, Color(0xFFDFE7F5)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
@@ -155,7 +130,7 @@ fun LoginScreen(
                 ) {
 
                     Text(
-                        text = "Chào mừng bạn 👋",
+                        text = "Chào mừng đến Homever",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = HomeverBlueDark
@@ -194,21 +169,23 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .height(52.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = HomeverBlue,
-                            disabledContainerColor = HomeverBlue.copy(alpha = 0.5f)
+                            containerColor = SplashBlue,
+                            contentColor = Color.White,
+                            disabledContainerColor = Color(0xFFE0E8FC),
+                            disabledContentColor = Color(0xFF52627F)
                         ),
                         shape = RoundedCornerShape(14.dp),
                         enabled = !isLoading && isAuthReady
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
-                                color = Color.White,
+                                color = SplashBlue,
                                 modifier = Modifier.size(22.dp),
                                 strokeWidth = 2.5.dp
                             )
                         } else if (!isAuthReady) {
                             CircularProgressIndicator(
-                                color = Color.White,
+                                color = SplashBlue,
                                 modifier = Modifier.size(22.dp),
                                 strokeWidth = 2.5.dp
                             )
@@ -251,10 +228,12 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .height(52.dp),
                         shape = RoundedCornerShape(14.dp),
-                        border = ButtonDefaults.outlinedButtonBorder,
+                        border = BorderStroke(1.dp, Color(0xFFD7E0EF)),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White,
-                            contentColor = HomeverTextDark
+                            containerColor = Color(0xFFFAFCFF),
+                            contentColor = HomeverTextDark,
+                            disabledContainerColor = Color(0xFFF5F7FC),
+                            disabledContentColor = Color(0xFF738099)
                         ),
                         enabled = !isLoading && isAuthReady
                     ) {

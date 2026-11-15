@@ -76,6 +76,7 @@ fun ProfileScreen(
     initialAge: String = "",
     initialOccupation: String = "",
     onAvatarSelected: (Uri?) -> Unit = {},
+    onRetry: () -> Unit = {},
     onBack: () -> Unit = {},
     onComplete: (String, String, String, String) -> Unit = { _, _, _, _ -> }
 ) {
@@ -286,15 +287,6 @@ fun ProfileScreen(
                 textStyle = TextStyle(fontSize = 15.sp, color = HomeverTextDark),
                 enabled = false
             )
-            // Show age info
-            if (age.isNotBlank()) {
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "(${age} tuổi)",
-                    fontSize = 12.sp,
-                    color = BluePrimary
-                )
-            }
         }
 
         // Year picker dialog
@@ -336,22 +328,12 @@ fun ProfileScreen(
                                     }
                                     .padding(vertical = 14.dp, horizontal = 16.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = year.toString(),
-                                        fontSize = 16.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (isSelected) BluePrimary else HomeverTextDark
-                                    )
-                                    Text(
-                                        text = "($computedAge tuổi)",
-                                        fontSize = 14.sp,
-                                        color = TextGray
-                                    )
-                                }
+                                Text(
+                                    text = year.toString(),
+                                    fontSize = 16.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) BluePrimary else HomeverTextDark
+                                )
                             }
                         }
                     }
@@ -384,6 +366,13 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
+            TextButton(
+                onClick = onRetry,
+                enabled = !isLoading,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text("Thử lại", color = BluePrimary)
+            }
         }
 
         Spacer(Modifier.height(32.dp))

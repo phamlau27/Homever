@@ -25,5 +25,59 @@ model Profile {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  sentInterests     Interest[] @relation("SentInterests")
+  receivedInterests Interest[] @relation("ReceivedInterests")
+
+  firstConversations  Conversation[] @relation("FirstParticipant")
+  secondConversations Conversation[] @relation("SecondParticipant")
+  chatMessages        ChatMessage[]
+
   @@map("homever_profiles")
+}
+
+model Interest {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  createdAt  DateTime @default(now())
+  sender     Profile  @relation("SentInterests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   Profile  @relation("ReceivedInterests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId, createdAt])
+  @@map("homever_interests")
+}
+
+model Conversation {
+  id                    String        @id @default(uuid())
+  firstProfileId        String
+  secondProfileId       String
+  firstMatchSeenAt      DateTime?
+  secondMatchSeenAt     DateTime?
+  firstReadMessageId    Int           @default(0)
+  secondReadMessageId   Int           @default(0)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  firstProfile          Profile       @relation("FirstParticipant", fields: [firstProfileId], references: [id], onDelete: Cascade)
+  secondProfile         Profile       @relation("SecondParticipant", fields: [secondProfileId], references: [id], onDelete: Cascade)
+  messages              ChatMessage[]
+
+  @@unique([firstProfileId, secondProfileId])
+  @@index([secondProfileId])
+  @@map("homever_conversations")
+}
+
+model ChatMessage {
+  id             Int          @id @default(autoincrement())
+  conversationId String
+  senderId       String
+  clientId       String       @db.VarChar(64)
+  content        String       @db.VarChar(4000)
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         Profile      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, clientId])
+  @@index([conversationId, id])
+  @@map("homever_messages")
 }
