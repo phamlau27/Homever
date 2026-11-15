@@ -68,6 +68,9 @@ class ProfileViewModel(
     private val _tempBio = MutableStateFlow("")
     val tempBio: StateFlow<String> = _tempBio.asStateFlow()
 
+    private val _tempTraits = MutableStateFlow("")
+    val tempTraits: StateFlow<String> = _tempTraits.asStateFlow()
+
     // Guard against duplicate submission
     private var isSubmitting = false
 
@@ -96,8 +99,91 @@ class ProfileViewModel(
         _tempBio.value = bio
     }
 
+    fun saveTraitsLocally(traits: String) {
+        _tempTraits.value = traits
+    }
+
     fun updateAvatarUri(uri: Uri?) {
         _avatarUri.value = uri
+    }
+
+    /**
+     * Updates and immediately saves introduction notes (bio, lifestyle, traits) to Backend.
+     */
+    fun saveIntroNotes(bio: String, lifestyle: String, traits: String, onComplete: ((Boolean) -> Unit)? = null) {
+        _tempBio.value = bio
+        _tempLifestyle.value = lifestyle
+        _tempTraits.value = traits
+
+        viewModelScope.launch {
+            val current = _currentProfile.value ?: UserProfile(
+                displayName = _tempDisplayName.value,
+                gender = _tempGender.value,
+                age = _tempAge.value.toIntOrNull() ?: 20,
+                occupation = _tempOccupation.value
+            )
+            val updated = current.copy(
+                bio = bio,
+                lifestyle = lifestyle,
+                traits = traits
+            )
+            val result = profileRepository.updateMyProfile(updated)
+            result.fold(
+                onSuccess = { savedProfile ->
+                    populateFromProfile(savedProfile)
+                    onComplete?.invoke(true)
+                },
+                onFailure = {
+                    onComplete?.invoke(false)
+                }
+            )
+        }
+    }
+
+    /**
+     * Uploads an additional photo to Supabase Storage and appends its URL to avatarUrl in PostgreSQL.
+     */
+    fun uploadAndAddPhoto(uri: Uri, onComplete: ((Boolean, String?) -> Unit)? = null) {
+        viewModelScope.launch {
+            _status.value = ProfileStatus.LOADING
+            val uploadResult = profileRepository.uploadAvatar(uri)
+            uploadResult.fold(
+                onSuccess = { uploadedUrl ->
+                    val current = _currentProfile.value ?: UserProfile(
+                        displayName = _tempDisplayName.value,
+                        gender = _tempGender.value,
+                        age = _tempAge.value.toIntOrNull() ?: 20,
+                        occupation = _tempOccupation.value
+                    )
+                    val rawAvatar = current.avatarUrl ?: _avatarUri.value?.toString() ?: ""
+                    val existingPhotos = rawAvatar.split(",")
+                        .map { it.trim() }
+                        .filter { it.isNotBlank() }
+                    val updatedPhotos = (existingPhotos + uploadedUrl).distinct()
+                    val newAvatarUrl = updatedPhotos.joinToString(",")
+
+                    val updatedProfile = current.copy(avatarUrl = newAvatarUrl)
+                    val updateResult = profileRepository.updateMyProfile(updatedProfile)
+                    updateResult.fold(
+                        onSuccess = { saved ->
+                            populateFromProfile(saved)
+                            _status.value = ProfileStatus.SUCCESS
+                            onComplete?.invoke(true, uploadedUrl)
+                        },
+                        onFailure = { error ->
+                            _status.value = ProfileStatus.ERROR
+                            _errorMessage.value = "Lưu ảnh thất bại: ${error.message}"
+                            onComplete?.invoke(false, null)
+                        }
+                    )
+                },
+                onFailure = { error ->
+                    _status.value = ProfileStatus.ERROR
+                    _errorMessage.value = "Tải ảnh thất bại: ${error.message}"
+                    onComplete?.invoke(false, null)
+                }
+            )
+        }
     }
 
     private fun populateFromProfile(profile: UserProfile) {
@@ -111,8 +197,12 @@ class ProfileViewModel(
         _tempBudget.value = profile.budget ?: ""
         _tempLocation.value = profile.location ?: ""
         _tempBio.value = profile.bio ?: ""
+        _tempTraits.value = profile.traits ?: ""
         if (!profile.avatarUrl.isNullOrBlank()) {
-            _avatarUri.value = Uri.parse(profile.avatarUrl)
+            val firstPhoto = profile.avatarUrl.split(",").firstOrNull { it.isNotBlank() }
+            if (firstPhoto != null) {
+                _avatarUri.value = Uri.parse(firstPhoto)
+            }
         }
     }
 
@@ -258,7 +348,8 @@ class ProfileViewModel(
                     lifestyle = _tempLifestyle.value,
                     budget = _tempBudget.value,
                     location = _tempLocation.value,
-                    bio = _tempBio.value
+                    bio = _tempBio.value,
+                    traits = _tempTraits.value
                 )
 
                 val updateResult = profileRepository.updateMyProfile(profile)

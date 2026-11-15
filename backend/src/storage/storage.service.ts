@@ -24,7 +24,7 @@ export class StorageService {
   }
 
   async uploadImage(file: Express.Multer.File, userId: string) {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
     if (!file || !file.mimetype || !allowedTypes.includes(file.mimetype)) {
       throw new BadRequestException(
@@ -34,6 +34,7 @@ export class StorageService {
 
     const extensionMap: Record<string, string> = {
       'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
       'image/png': 'png',
       'image/webp': 'webp',
     };

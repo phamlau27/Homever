@@ -25,6 +25,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -182,7 +183,8 @@ fun ProfileScreen(
             label = "Tên hiển thị *",
             value = displayName,
             onValueChange = { displayName = it },
-            placeholder = "Nhập tên của bạn"
+            placeholder = "Nhập tên của bạn",
+            capitalization = KeyboardCapitalization.Words
         )
 
         Spacer(Modifier.height(16.dp))
@@ -253,7 +255,8 @@ fun ProfileScreen(
             label = "Nghề nghiệp hoặc Trường học *",
             value = occupation,
             onValueChange = { occupation = it },
-            placeholder = "Ví dụ: Sinh viên ĐH Bách Khoa"
+            placeholder = "Ví dụ: Sinh viên ĐH Bách Khoa",
+            capitalization = KeyboardCapitalization.Sentences
         )
 
         // ── Error ─────────────────────────────────────────────────────────
@@ -309,6 +312,8 @@ fun ProfileInputField(
     onValueChange: (String) -> Unit,
     placeholder: String = "",
     keyboardType: KeyboardType = KeyboardType.Text,
+    capitalization: KeyboardCapitalization = KeyboardCapitalization.None,
+    singleLine: Boolean = true,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -324,6 +329,7 @@ fun ProfileInputField(
             onValueChange = onValueChange,
             placeholder = { Text(text = placeholder, color = Color(0xFFA0AAB0)) },
             modifier = Modifier.fillMaxWidth(),
+            singleLine = singleLine,
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedBorderColor = HomeverGrayBorder,
@@ -332,7 +338,11 @@ fun ProfileInputField(
                 focusedContainerColor = Color.White
             ),
             trailingIcon = trailingIcon,
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = keyboardType,
+                capitalization = capitalization,
+                autoCorrectEnabled = true
+            ),
             textStyle = TextStyle(fontSize = 15.sp, color = HomeverTextDark)
         )
     }

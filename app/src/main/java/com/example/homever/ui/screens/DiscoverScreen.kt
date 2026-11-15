@@ -1,6 +1,7 @@
 package com.example.homever.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -86,6 +87,15 @@ private val RefreshIcon: ImageVector
         }
     }.build()
 
+private val InfoIcon: ImageVector
+    get() = ImageVector.Builder(name = "Info", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f).apply {
+        path(fill = SolidColor(Color.White)) {
+            moveTo(12f, 2f); arcTo(10f, 10f, 0f, true, false, 12f, 22f); arcTo(10f, 10f, 0f, true, false, 12f, 2f); close()
+            moveTo(11f, 7f); lineTo(13f, 7f); lineTo(13f, 9f); lineTo(11f, 9f); close()
+            moveTo(11f, 11f); lineTo(13f, 11f); lineTo(13f, 17f); lineTo(11f, 17f); close()
+        }
+    }.build()
+
 data class RoommateCandidate(
     val name: String,
     val age: Int,
@@ -96,7 +106,10 @@ data class RoommateCandidate(
     val bio: String,
     val matchPercentage: Int = 85,
     val gradientColors: List<Color>,
-    val avatarUrl: String? = null
+    val avatarUrl: String? = null,
+    val lifestyle: String? = null,
+    val traits: String? = null,
+    val needType: String? = null
 )
 
 val sampleCandidates = listOf(
@@ -147,7 +160,8 @@ fun DiscoverScreen(
     modifier: Modifier = Modifier,
     onNavigateToProfile: () -> Unit = {},
     onNavigateToRoom: () -> Unit = {},
-    onNavigateToMessages: () -> Unit = {}
+    onNavigateToMessages: () -> Unit = {},
+    onNavigateToUserDetail: (RoommateCandidate) -> Unit = {}
 ) {
     var candidates by remember { mutableStateOf(sampleCandidates) }
     var currentIndex by remember { mutableStateOf(0) }
@@ -185,7 +199,10 @@ fun DiscoverScreen(
                                 bio = p.bio ?: "Tìm bạn cùng phòng hòa đồng, tôn trọng không gian chung.",
                                 matchPercentage = item.score.percentage,
                                 gradientColors = colorPalettes[idx % colorPalettes.size],
-                                avatarUrl = p.avatarUrl
+                                avatarUrl = p.avatarUrl,
+                                lifestyle = p.lifestyle,
+                                traits = p.traits,
+                                needType = p.needType
                             )
                         }
                         withContext(Dispatchers.Main) {
@@ -229,9 +246,10 @@ fun DiscoverScreen(
                     .background(Brush.verticalGradient(candidate.gradientColors)),
                 contentAlignment = Alignment.Center
             ) {
-                if (!candidate.avatarUrl.isNullOrBlank()) {
+                val displayAvatar = candidate.avatarUrl?.split(",")?.firstOrNull { it.isNotBlank() }
+                if (!displayAvatar.isNullOrBlank()) {
                     AsyncImage(
-                        model = candidate.avatarUrl,
+                        model = displayAvatar,
                         contentDescription = candidate.name,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -311,20 +329,47 @@ fun DiscoverScreen(
                     .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))))
                     .padding(horizontal = 24.dp, vertical = 24.dp)
             ) {
-                Column(modifier = Modifier.align(Alignment.BottomStart)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("${candidate.name}, ${candidate.age}", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        Spacer(Modifier.width(10.dp))
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .clickable { onNavigateToUserDetail(candidate) }
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("${candidate.name}, ${candidate.age}", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Spacer(Modifier.width(10.dp))
+                            Box(
+                                modifier = Modifier
+                                    .background(Color(0xFF10B981), RoundedCornerShape(12.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    "${candidate.matchPercentage}% Hợp",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        // Info Button to view User Profile Detail
                         Box(
                             modifier = Modifier
-                                .background(Color(0xFF10B981), RoundedCornerShape(12.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .size(36.dp)
+                                .border(width = 1.dp, color = Color.White.copy(alpha = 0.5f), shape = CircleShape)
+                                .background(Color.Black.copy(alpha = 0.35f), CircleShape)
+                                .clickable { onNavigateToUserDetail(candidate) },
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                "${candidate.matchPercentage}% Hợp",
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
+                            Icon(
+                                imageVector = InfoIcon,
+                                contentDescription = "Xem thông tin người dùng",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }

@@ -53,8 +53,17 @@ class ProfileRepositoryImpl(
             val ctx = context ?: return@withContext Result.failure(Exception("Context is required for image upload"))
             val contentResolver = ctx.contentResolver
 
-            val resolvedType = contentResolver.getType(uri) ?: contentType.ifBlank { "image/jpeg" }
-            val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(resolvedType) ?: "jpg"
+            val rawType = contentResolver.getType(uri) ?: contentType.ifBlank { "image/jpeg" }
+            val resolvedType = when {
+                rawType.contains("png", ignoreCase = true) -> "image/png"
+                rawType.contains("webp", ignoreCase = true) -> "image/webp"
+                else -> "image/jpeg"
+            }
+            val extension = when (resolvedType) {
+                "image/png" -> "png"
+                "image/webp" -> "webp"
+                else -> "jpg"
+            }
             val fileName = "avatar_${System.currentTimeMillis()}.$extension"
 
             val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
@@ -68,7 +77,8 @@ class ProfileRepositoryImpl(
                 val uploadResponse = response.body()!!
                 Result.success(uploadResponse.url)
             } else {
-                Result.failure(Exception("Upload failed with HTTP ${response.code()}: ${response.errorBody()?.string()}"))
+                val errorBody = response.errorBody()?.string()
+                Result.failure(Exception("Upload failed with HTTP ${response.code()}: $errorBody"))
             }
         } catch (e: Exception) {
             Result.failure(Exception("NETWORK_ERROR: ${e.message}", e))

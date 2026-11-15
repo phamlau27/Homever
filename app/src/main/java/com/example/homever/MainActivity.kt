@@ -15,6 +15,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -129,12 +132,14 @@ class MainActivity : ComponentActivity() {
                 val tempBudget by profileViewModel.tempBudget.collectAsState()
                 val tempLocation by profileViewModel.tempLocation.collectAsState()
                 val tempBio by profileViewModel.tempBio.collectAsState()
+                val tempTraits by profileViewModel.tempTraits.collectAsState()
 
                 val isAuthReady by authManager.isReady.collectAsState()
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
                         val navController = rememberNavController()
+                        var selectedUserCandidate by remember { mutableStateOf<RoommateCandidate?>(null) }
 
                         val isLoggedIn = authRepository.isLoggedIn()
                         val isProfileCompleted = sessionManager.isProfileCompleted()
@@ -357,6 +362,32 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onNavigateToMessages = {
                                         navController.navigate("messages")
+                                    },
+                                    onNavigateToUserDetail = { candidate ->
+                                        selectedUserCandidate = candidate
+                                        navController.navigate("user_profile_detail")
+                                    }
+                                )
+                            }
+
+                            // ── User Profile Detail (View other candidate or preview) ─
+                            composable("user_profile_detail") {
+                                val cand = selectedUserCandidate
+                                UserProfileDetailScreen(
+                                    name = cand?.name ?: tempDisplayName.ifBlank { "Người dùng" },
+                                    age = cand?.age ?: (tempAge.toIntOrNull() ?: 22),
+                                    occupation = cand?.occupation ?: tempOccupation,
+                                    location = cand?.location ?: tempLocation,
+                                    budget = cand?.budget ?: tempBudget,
+                                    bio = cand?.bio ?: tempBio,
+                                    lifestyle = cand?.lifestyle ?: tempLifestyle,
+                                    traits = cand?.traits ?: tempTraits,
+                                    tags = cand?.tags ?: tempLifestyle.split(",").map { it.trim() }.filter { it.isNotBlank() },
+                                    avatarUrl = cand?.avatarUrl ?: currentProfile?.avatarUrl ?: profileAvatarUri?.toString(),
+                                    matchPercentage = cand?.matchPercentage ?: 85,
+                                    onBack = { navController.popBackStack() },
+                                    onStartChat = {
+                                        navController.navigate("messages")
                                     }
                                 )
                             }
@@ -403,7 +434,36 @@ class MainActivity : ComponentActivity() {
                                     budget = tempBudget,
                                     location = tempLocation,
                                     bio = tempBio,
-                                    avatarUrl = profileAvatarUri?.toString() ?: currentProfile?.avatarUrl,
+                                    traits = tempTraits,
+                                    avatarUrl = currentProfile?.avatarUrl ?: profileAvatarUri?.toString(),
+                                    isPhotoUploading = profileStatus == ProfileStatus.LOADING,
+                                    onAddPhoto = { uri ->
+                                        profileViewModel.uploadAndAddPhoto(uri) { success, _ ->
+                                            if (!success) {
+                                                Toast.makeText(
+                                                    this@MainActivity,
+                                                    profileErrorMessage ?: "Tải ảnh thất bại",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            } else {
+                                                Toast.makeText(
+                                                    this@MainActivity,
+                                                    "Đã thêm ảnh thành công!",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                    },
+                                    onSaveNotes = { bioVal, lifestyleVal, traitsVal ->
+                                        profileViewModel.saveIntroNotes(bioVal, lifestyleVal, traitsVal)
+                                    },
+                                    onPreviewClick = {
+                                        selectedUserCandidate = null
+                                        navController.navigate("user_profile_detail")
+                                    },
+                                    onEditProfileClick = {
+                                        navController.navigate("profile")
+                                    },
                                     onSettingsClick = {
                                         navController.navigate("account_settings")
                                     },
