@@ -45,7 +45,7 @@ val GoogleIcon: ImageVector
     }.build()
 
 // ── Homever logo "H" mark ──────────────────────────────────────────────────
-private val HomeverLogoIcon: ImageVector
+private val LoginLogoIcon: ImageVector
     get() = ImageVector.Builder(
         name = "HomeverLogo",
         defaultWidth = 32.dp, defaultHeight = 32.dp,
@@ -110,7 +110,7 @@ fun LoginScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = HomeverLogoIcon,
+                    imageVector = LoginLogoIcon,
                     contentDescription = "Homever",
                     tint = Color.White,
                     modifier = Modifier.size(40.dp)

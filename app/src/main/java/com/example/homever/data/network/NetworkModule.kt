@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 object NetworkModule {
 
     // Change this to your production base URL before release.
-    private const val BASE_URL = "http://192.168.56.1:3000/v1/"
+    private const val BASE_URL = "http://192.168.0.104:3000/v1/"
 
     private var _api: HomeverApi? = null
 

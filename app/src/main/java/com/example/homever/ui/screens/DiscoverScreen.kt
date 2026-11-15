@@ -19,7 +19,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.homever.data.network.NetworkModule
 import com.example.homever.ui.theme.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private val OrangePrimary = Color(0xFFF97316)
 
@@ -80,6 +83,7 @@ data class RoommateCandidate(
     val budget: String,
     val tags: List<String>,
     val bio: String,
+    val matchPercentage: Int = 85,
     val gradientColors: List<Color>
 )
 
@@ -133,8 +137,60 @@ fun DiscoverScreen(
     onNavigateToRoom: () -> Unit = {},
     onNavigateToMessages: () -> Unit = {}
 ) {
+    var candidates by remember { mutableStateOf(sampleCandidates) }
     var currentIndex by remember { mutableStateOf(0) }
-    val candidate = sampleCandidates[currentIndex]
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            try {
+                val response = NetworkModule.api.getMatchingCandidates(limit = 20)
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (!body.isNullOrEmpty()) {
+                        val mapped = body.mapIndexed { idx, item ->
+                            val p = item.profile
+                            val colorPalettes = listOf(
+                                listOf(Color(0xFF3B82F6), Color(0xFF1E3A8A)),
+                                listOf(Color(0xFF10B981), Color(0xFF065F46)),
+                                listOf(Color(0xFF8B5CF6), Color(0xFF4C1D95)),
+                                listOf(Color(0xFFF59E0B), Color(0xFF92400E))
+                            )
+                            val tagsList = mutableListOf<String>()
+                            if (!p.lifestyle.isNullOrBlank()) tagsList.addAll(p.lifestyle.split(";", ",").map { it.trim() }.filter { it.isNotBlank() })
+                            if (!p.traits.isNullOrBlank()) tagsList.addAll(p.traits.split(";", ",").map { it.trim() }.filter { it.isNotBlank() })
+                            if (tagsList.isEmpty()) tagsList.addAll(listOf("Linh hoạt", "Thân thiện"))
+
+                            RoommateCandidate(
+                                name = p.displayName.ifBlank { "Ứng viên ${idx + 1}" },
+                                age = if (p.age > 0) p.age else 22,
+                                occupation = p.occupation.ifBlank { "Sinh viên / Đi làm" },
+                                location = p.location ?: "TP.HCM",
+                                budget = p.budget ?: "Thỏa thuận",
+                                tags = tagsList.take(3),
+                                bio = p.bio ?: "Tìm bạn cùng phòng hòa đồng, tôn trọng không gian chung.",
+                                matchPercentage = item.score.percentage,
+                                gradientColors = colorPalettes[idx % colorPalettes.size]
+                            )
+                        }
+                        withContext(Dispatchers.Main) {
+                            candidates = mapped
+                            currentIndex = 0
+                            isLoading = false
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Giữ sampleCandidates nếu lỗi hoặc offline
+            } finally {
+                withContext(Dispatchers.Main) {
+                    isLoading = false
+                }
+            }
+        }
+    }
+
+    val candidate = candidates.getOrElse(currentIndex) { sampleCandidates[0] }
 
     Scaffold(
         bottomBar = {
@@ -198,7 +254,22 @@ fun DiscoverScreen(
                     .padding(horizontal = 24.dp, vertical = 24.dp)
             ) {
                 Column(modifier = Modifier.align(Alignment.BottomStart)) {
-                    Text("${candidate.name}, ${candidate.age}", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("${candidate.name}, ${candidate.age}", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Spacer(Modifier.width(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .background(Color(0xFF10B981), RoundedCornerShape(12.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                "${candidate.matchPercentage}% Hợp",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(candidate.occupation, fontSize = 14.sp, color = Color.White.copy(alpha = 0.9f))
                     Spacer(modifier = Modifier.height(2.dp))

@@ -5,6 +5,20 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Query
+
+data class MatchingScore(
+    val cu: Float = 0f,
+    val cv: Float = 0f,
+    val cr: Float = 0f,
+    val percentage: Int = 0,
+    val criteriaScores: Map<String, Float> = emptyMap()
+)
+
+data class CandidateResponse(
+    val profile: UserProfile,
+    val score: MatchingScore
+)
 
 data class UserProfile(
     val id: String = "",
@@ -40,4 +54,7 @@ interface HomeverApi {
 
     @POST("users/me/avatar/presigned-url")
     suspend fun getAvatarPresignedUrl(@Body request: PresignedUrlRequest): Response<PresignedUrlResponse>
+
+    @GET("matching/candidates")
+    suspend fun getMatchingCandidates(@Query("limit") limit: Int = 20): Response<List<CandidateResponse>>
 }
