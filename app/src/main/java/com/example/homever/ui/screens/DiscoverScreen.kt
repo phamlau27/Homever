@@ -9,19 +9,23 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.homever.data.network.NetworkModule
 import com.example.homever.ui.theme.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private val OrangePrimary = Color(0xFFF97316)
@@ -75,6 +79,13 @@ val DiscoverPersonIcon: ImageVector
         }
     }.build()
 
+private val RefreshIcon: ImageVector
+    get() = ImageVector.Builder(name = "Refresh", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f).apply {
+        path(fill = SolidColor(Color.White)) {
+            moveTo(17.65f, 6.35f); arcTo(7.958f, 7.958f, 0f, false, false, 12f, 4f); arcTo(8f, 8f, 0f, false, false, 4f, 12f); arcTo(8f, 8f, 0f, false, false, 12f, 20f); curveTo(15.73f, 20f, 18.84f, 17.45f, 19.73f, 14f); lineTo(17.65f, 14f); curveTo(16.83f, 16.33f, 14.61f, 18f, 12f, 18f); arcTo(6f, 6f, 0f, false, true, 6f, 12f); arcTo(6f, 6f, 0f, false, true, 12f, 6f); curveTo(13.66f, 6f, 15.14f, 6.69f, 16.22f, 7.78f); lineTo(13f, 11f); lineTo(20f, 11f); lineTo(20f, 4f); lineTo(17.65f, 6.35f); close()
+        }
+    }.build()
+
 data class RoommateCandidate(
     val name: String,
     val age: Int,
@@ -84,7 +95,8 @@ data class RoommateCandidate(
     val tags: List<String>,
     val bio: String,
     val matchPercentage: Int = 85,
-    val gradientColors: List<Color>
+    val gradientColors: List<Color>,
+    val avatarUrl: String? = null
 )
 
 val sampleCandidates = listOf(
@@ -140,22 +152,24 @@ fun DiscoverScreen(
     var candidates by remember { mutableStateOf(sampleCandidates) }
     var currentIndex by remember { mutableStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
+    fun fetchCandidates() {
+        isLoading = true
+        scope.launch(Dispatchers.IO) {
             try {
                 val response = NetworkModule.api.getMatchingCandidates(limit = 20)
                 if (response.isSuccessful) {
                     val body = response.body()
                     if (!body.isNullOrEmpty()) {
+                        val colorPalettes = listOf(
+                            listOf(Color(0xFF3B82F6), Color(0xFF1E3A8A)),
+                            listOf(Color(0xFF10B981), Color(0xFF065F46)),
+                            listOf(Color(0xFF8B5CF6), Color(0xFF4C1D95)),
+                            listOf(Color(0xFFF59E0B), Color(0xFF92400E))
+                        )
                         val mapped = body.mapIndexed { idx, item ->
                             val p = item.profile
-                            val colorPalettes = listOf(
-                                listOf(Color(0xFF3B82F6), Color(0xFF1E3A8A)),
-                                listOf(Color(0xFF10B981), Color(0xFF065F46)),
-                                listOf(Color(0xFF8B5CF6), Color(0xFF4C1D95)),
-                                listOf(Color(0xFFF59E0B), Color(0xFF92400E))
-                            )
                             val tagsList = mutableListOf<String>()
                             if (!p.lifestyle.isNullOrBlank()) tagsList.addAll(p.lifestyle.split(";", ",").map { it.trim() }.filter { it.isNotBlank() })
                             if (!p.traits.isNullOrBlank()) tagsList.addAll(p.traits.split(";", ",").map { it.trim() }.filter { it.isNotBlank() })
@@ -170,13 +184,13 @@ fun DiscoverScreen(
                                 tags = tagsList.take(3),
                                 bio = p.bio ?: "Tìm bạn cùng phòng hòa đồng, tôn trọng không gian chung.",
                                 matchPercentage = item.score.percentage,
-                                gradientColors = colorPalettes[idx % colorPalettes.size]
+                                gradientColors = colorPalettes[idx % colorPalettes.size],
+                                avatarUrl = p.avatarUrl
                             )
                         }
                         withContext(Dispatchers.Main) {
                             candidates = mapped
                             currentIndex = 0
-                            isLoading = false
                         }
                     }
                 }
@@ -188,6 +202,10 @@ fun DiscoverScreen(
                 }
             }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        fetchCandidates()
     }
 
     val candidate = candidates.getOrElse(currentIndex) { sampleCandidates[0] }
@@ -211,39 +229,79 @@ fun DiscoverScreen(
                     .background(Brush.verticalGradient(candidate.gradientColors)),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        modifier = Modifier
-                            .size(120.dp)
-                            .background(Color.White.copy(alpha = 0.2f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = DiscoverPersonIcon,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(60.dp)
+                if (!candidate.avatarUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = candidate.avatarUrl,
+                        contentDescription = candidate.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .size(120.dp)
+                                .background(Color.White.copy(alpha = 0.2f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = candidate.name.take(1).uppercase().ifBlank { "U" },
+                                color = Color.White,
+                                fontSize = 48.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = candidate.name,
+                            color = Color.White,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = candidate.name,
-                        color = Color.White,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
-                    )
                 }
             }
-            
-            // Top Logo
-            Text(
-                text = "Homever",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier.padding(24.dp).align(Alignment.TopStart)
-            )
-            
+
+            // Top Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 20.dp)
+                    .align(Alignment.TopCenter),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Homever",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color.Black.copy(alpha = 0.35f), CircleShape)
+                        .clickable { fetchCandidates() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = RefreshIcon,
+                            contentDescription = "Đồng bộ / Làm mới",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
             // Gradient Overlay at Bottom
             Box(
                 modifier = Modifier
@@ -274,20 +332,20 @@ fun DiscoverScreen(
                     Text(candidate.occupation, fontSize = 14.sp, color = Color.White.copy(alpha = 0.9f))
                     Spacer(modifier = Modifier.height(2.dp))
                     Text("${candidate.location} • ${candidate.budget}", fontSize = 14.sp, color = Color.White.copy(alpha = 0.9f))
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(candidate.bio, fontSize = 12.sp, color = Color.White.copy(alpha = 0.75f), maxLines = 2)
 
                     Spacer(modifier = Modifier.height(12.dp))
-                    
+
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         candidate.tags.forEach { tag ->
                             TagPill(tag)
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(28.dp))
-                    
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -300,7 +358,9 @@ fun DiscoverScreen(
                             bgColor = Color.White,
                             label = "Quay lại",
                             onClick = {
-                                currentIndex = (currentIndex - 1 + sampleCandidates.size) % sampleCandidates.size
+                                if (candidates.isNotEmpty()) {
+                                    currentIndex = (currentIndex - 1 + candidates.size) % candidates.size
+                                }
                             }
                         )
                         ActionButton(
@@ -310,7 +370,9 @@ fun DiscoverScreen(
                             bgColor = Color.White,
                             label = "Bỏ qua",
                             onClick = {
-                                currentIndex = (currentIndex + 1) % sampleCandidates.size
+                                if (candidates.isNotEmpty()) {
+                                    currentIndex = (currentIndex + 1) % candidates.size
+                                }
                             }
                         )
                         ActionButton(
@@ -320,7 +382,9 @@ fun DiscoverScreen(
                             bgColor = OrangePrimary,
                             label = "Quan tâm",
                             onClick = {
-                                currentIndex = (currentIndex + 1) % sampleCandidates.size
+                                if (candidates.isNotEmpty()) {
+                                    currentIndex = (currentIndex + 1) % candidates.size
+                                }
                             }
                         )
                         ActionButton(

@@ -69,4 +69,7 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:storage-kt")
     implementation("io.github.jan-tennert.supabase:realtime-kt")
     implementation("io.ktor:ktor-client-android:3.6.1")
+
+    // Coil for Compose Image Loading
+    implementation("io.coil-kt:coil-compose:2.6.0")
 }

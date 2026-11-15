@@ -6,5 +6,5 @@ import com.example.homever.data.network.UserProfile
 interface ProfileRepository {
     suspend fun getMyProfile(): Result<UserProfile>
     suspend fun updateMyProfile(profile: UserProfile): Result<UserProfile>
-    suspend fun uploadAvatar(uri: Uri, contentType: String): Result<String> // returns URL or Key
+    suspend fun uploadAvatar(uri: Uri, contentType: String = "image/jpeg"): Result<String>
 }

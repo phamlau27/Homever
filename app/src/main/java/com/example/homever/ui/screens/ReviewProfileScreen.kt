@@ -1,5 +1,6 @@
 package com.example.homever.ui.screens
 
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,15 +13,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.homever.ui.theme.*
 
 private val ReviewArrowBack: ImageVector
@@ -62,6 +66,7 @@ fun ReviewProfileScreen(
     budget: String = "",
     location: String = "",
     bio: String = "",
+    avatarUri: Uri? = null,
     isLoading: Boolean = false,
     errorMessage: String? = null,
     onBack: () -> Unit = {},
@@ -100,19 +105,29 @@ fun ReviewProfileScreen(
         // ── Card 1: Profile Info ──────────────────────────────────────────
         ReviewCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Avatar initial
+                // Avatar initial / image
                 Box(
                     modifier = Modifier
                         .size(60.dp)
+                        .clip(CircleShape)
                         .background(BluePrimary, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = displayName.take(1).uppercase().ifBlank { "U" },
-                        color = Color.White,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (avatarUri != null) {
+                        AsyncImage(
+                            model = avatarUri,
+                            contentDescription = "Avatar",
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = displayName.take(1).uppercase().ifBlank { "U" },
+                            color = Color.White,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
                 Spacer(Modifier.width(16.dp))
                 Column {

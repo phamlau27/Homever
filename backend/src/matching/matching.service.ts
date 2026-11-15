@@ -320,6 +320,25 @@ export class MatchingService {
     // 5. Xếp hạng giảm dần theo C^R (u, v)
     scoredCandidates.sort((a, b) => b.score.cr - a.score.cr);
 
+    // Đồng bộ người dùng thực tế: Nếu danh sách sau lọc ít hơn limit và database có các ứng viên khác,
+    // bổ sung các ứng viên này để đảm bảo mọi người dùng thực tế đều tìm thấy nhau trên DiscoverScreen
+    if (scoredCandidates.length < limit && allCandidates.length > 0) {
+      const existingIds = new Set(scoredCandidates.map((c) => c.profile.id));
+      for (const candidate of allCandidates) {
+        if (!existingIds.has(candidate.id)) {
+          const score = this.calculateHarmonicScore(currentUser, candidate);
+          scoredCandidates.push({
+            profile: candidate,
+            score: {
+              ...score,
+              percentage: Math.max(score.percentage, 60), // Điểm tương thích cơ bản
+            },
+          });
+          existingIds.add(candidate.id);
+        }
+      }
+    }
+
     return scoredCandidates.slice(0, limit);
   }
 }

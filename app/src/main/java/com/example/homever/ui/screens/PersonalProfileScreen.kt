@@ -12,14 +12,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.homever.ui.theme.*
 
 private val ProfSettingsIcon: ImageVector
@@ -65,6 +68,7 @@ fun PersonalProfileScreen(
     budget: String = "",
     location: String = "",
     bio: String = "",
+    avatarUrl: String? = null,
     onSettingsClick: () -> Unit = {},
     onNavigateToDiscover: () -> Unit = {},
     onNavigateToRoom: () -> Unit = {},
@@ -140,15 +144,25 @@ fun PersonalProfileScreen(
                     Box(
                         modifier = Modifier
                             .size(72.dp)
+                            .clip(CircleShape)
                             .background(BluePrimary, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = displayName.take(1).uppercase().ifBlank { "U" },
-                            color = Color.White,
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (!avatarUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = avatarUrl,
+                                contentDescription = "Avatar",
+                                modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(
+                                text = displayName.take(1).uppercase().ifBlank { "U" },
+                                color = Color.White,
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.width(16.dp))

@@ -90,7 +90,7 @@ class MainActivity : ComponentActivity() {
         val authRepository: AuthRepository = AuthRepositoryImpl(sessionManager)
 
         val homeverApi = NetworkModule.initialize(sessionManager, authManager)
-        val profileRepository: ProfileRepository = ProfileRepositoryImpl(homeverApi)
+        val profileRepository: ProfileRepository = ProfileRepositoryImpl(homeverApi, applicationContext)
 
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -117,6 +117,7 @@ class MainActivity : ComponentActivity() {
                 val profileStatus by profileViewModel.status.collectAsState()
                 val profileErrorMessage by profileViewModel.errorMessage.collectAsState()
                 val profileAvatarUri by profileViewModel.avatarUri.collectAsState()
+                val currentProfile by profileViewModel.currentProfile.collectAsState()
 
                 // Collect StateFlow onboarding values
                 val tempDisplayName by profileViewModel.tempDisplayName.collectAsState()
@@ -310,6 +311,7 @@ class MainActivity : ComponentActivity() {
                                     budget = tempBudget,
                                     location = tempLocation,
                                     bio = tempBio,
+                                    avatarUri = profileAvatarUri,
                                     isLoading = profileStatus == ProfileStatus.LOADING,
                                     errorMessage = profileErrorMessage,
                                     onBack = { navController.popBackStack() },
@@ -381,6 +383,7 @@ class MainActivity : ComponentActivity() {
                                     budget = tempBudget,
                                     location = tempLocation,
                                     bio = tempBio,
+                                    avatarUrl = profileAvatarUri?.toString() ?: currentProfile?.avatarUrl,
                                     onSettingsClick = {
                                         navController.navigate("account_settings")
                                     },

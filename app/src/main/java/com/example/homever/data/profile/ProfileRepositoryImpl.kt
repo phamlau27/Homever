@@ -1,14 +1,20 @@
 package com.example.homever.data.profile
 
+import android.content.Context
 import android.net.Uri
+import android.webkit.MimeTypeMap
 import com.example.homever.data.network.HomeverApi
 import com.example.homever.data.network.UserProfile
 import com.example.homever.domain.repository.ProfileRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class ProfileRepositoryImpl(
-    private val api: HomeverApi
+    private val api: HomeverApi,
+    private val context: Context? = null
 ) : ProfileRepository {
 
     override suspend fun getMyProfile(): Result<UserProfile> = withContext(Dispatchers.IO) {
@@ -42,8 +48,30 @@ class ProfileRepositoryImpl(
         }
     }
 
-    // S3 avatar upload is deferred — this method is a stub until S3 is provisioned.
-    override suspend fun uploadAvatar(uri: Uri, contentType: String): Result<String> {
-        return Result.failure(Exception("AVATAR_UPLOAD_NOT_CONFIGURED"))
+    override suspend fun uploadAvatar(uri: Uri, contentType: String): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val ctx = context ?: return@withContext Result.failure(Exception("Context is required for image upload"))
+            val contentResolver = ctx.contentResolver
+
+            val resolvedType = contentResolver.getType(uri) ?: contentType.ifBlank { "image/jpeg" }
+            val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(resolvedType) ?: "jpg"
+            val fileName = "avatar_${System.currentTimeMillis()}.$extension"
+
+            val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                ?: return@withContext Result.failure(Exception("Could not read image data from URI"))
+
+            val requestBody = bytes.toRequestBody(resolvedType.toMediaTypeOrNull())
+            val part = MultipartBody.Part.createFormData("file", fileName, requestBody)
+
+            val response = api.uploadImage(part)
+            if (response.isSuccessful && response.body() != null) {
+                val uploadResponse = response.body()!!
+                Result.success(uploadResponse.url)
+            } else {
+                Result.failure(Exception("Upload failed with HTTP ${response.code()}: ${response.errorBody()?.string()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("NETWORK_ERROR: ${e.message}", e))
+        }
     }
 }

@@ -111,6 +111,9 @@ class ProfileViewModel(
         _tempBudget.value = profile.budget ?: ""
         _tempLocation.value = profile.location ?: ""
         _tempBio.value = profile.bio ?: ""
+        if (!profile.avatarUrl.isNullOrBlank()) {
+            _avatarUri.value = Uri.parse(profile.avatarUrl)
+        }
     }
 
     fun clearError() {
@@ -227,12 +230,30 @@ class ProfileViewModel(
 
         viewModelScope.launch {
             try {
+                var finalAvatarUrl: String? = _currentProfile.value?.avatarUrl
+
+                // If user selected a new local image URI, upload it to Supabase Storage first
+                val selectedAvatarUri = _avatarUri.value
+                if (selectedAvatarUri != null && !selectedAvatarUri.toString().startsWith("http")) {
+                    val uploadResult = profileRepository.uploadAvatar(selectedAvatarUri)
+                    uploadResult.fold(
+                        onSuccess = { uploadedUrl ->
+                            finalAvatarUrl = uploadedUrl
+                            Log.d("ProfileViewModel", "Avatar uploaded successfully: $uploadedUrl")
+                        },
+                        onFailure = { uploadError ->
+                            Log.e("ProfileViewModel", "Avatar upload failed: ${uploadError.message}", uploadError)
+                            // Allow graceful fallback without crashing, or notify in log
+                        }
+                    )
+                }
+
                 val profile = UserProfile(
                     displayName = _tempDisplayName.value,
                     gender = _tempGender.value,
                     age = ageInt,
                     occupation = _tempOccupation.value,
-                    avatarUrl = null, // S3 upload deferred — avatar is optional
+                    avatarUrl = finalAvatarUrl,
                     needType = _tempNeedType.value,
                     lifestyle = _tempLifestyle.value,
                     budget = _tempBudget.value,
