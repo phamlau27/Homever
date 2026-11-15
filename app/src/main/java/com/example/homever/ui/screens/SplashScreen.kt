@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,32 +31,47 @@ import androidx.compose.ui.unit.sp
 import com.example.homever.ui.theme.HomEverTheme
 import kotlinx.coroutines.delay
 
-val SplashBlue = Color(0xFF2563EB) // Màu nền #2563EB từ XML
+val SplashBlue = Color(0xFF3B66F5)
 
-val HomeverLogoIcon: ImageVector
+// Logo chính xác theo thiết kế Figma 01-splash: Mái nhà + Trái tim lồng ghép kết nối
+val HomeverSplashLogoIcon: ImageVector
     get() = ImageVector.Builder(
-        name = "HomeverLogo",
-        defaultWidth = 64.dp,
-        defaultHeight = 64.dp,
-        viewportWidth = 24f,
-        viewportHeight = 24f
+        name = "HomeverSplashLogo",
+        defaultWidth = 100.dp,
+        defaultHeight = 100.dp,
+        viewportWidth = 100f,
+        viewportHeight = 100f
     ).apply {
-        // Ngôi nhà cách điệu kết hợp kết nối
-        path(fill = SolidColor(Color.White)) {
-            moveTo(10f, 20f)
-            lineTo(14f, 20f)
-            lineTo(14f, 14f)
-            lineTo(10f, 14f)
-            close()
-            moveTo(21f, 10.27f)
-            lineTo(12f, 3f)
-            lineTo(3f, 10.27f)
-            lineTo(3f, 21f)
-            lineTo(8f, 21f)
-            lineTo(8f, 12f)
-            lineTo(16f, 12f)
-            lineTo(16f, 21f)
-            lineTo(21f, 21f)
+        // Mái nhà che chở
+        path(
+            stroke = SolidColor(Color.White),
+            strokeLineWidth = 6f
+        ) {
+            moveTo(18f, 50f)
+            lineTo(50f, 22f)
+            lineTo(82f, 50f)
+        }
+        // Thân nhà & Trái tim lồng ghép
+        path(
+            stroke = SolidColor(Color.White),
+            strokeLineWidth = 6f
+        ) {
+            moveTo(28f, 48f)
+            lineTo(28f, 76f)
+            lineTo(72f, 76f)
+            lineTo(72f, 48f)
+        }
+        // Biểu tượng trái tim / kết nối bên trong
+        path(
+            fill = SolidColor(Color.White)
+        ) {
+            moveTo(50f, 68f)
+            curveTo(46f, 64f, 36f, 55f, 36f, 46f)
+            curveTo(36f, 40f, 41f, 36f, 46.5f, 36f)
+            curveTo(49.5f, 36f, 52.5f, 38f, 50f, 42f)
+            curveTo(47.5f, 38f, 50.5f, 36f, 53.5f, 36f)
+            curveTo(59f, 36f, 64f, 40f, 64f, 46f)
+            curveTo(64f, 55f, 54f, 64f, 50f, 68f)
             close()
         }
     }.build()
@@ -66,14 +81,13 @@ fun SplashScreen(
     modifier: Modifier = Modifier,
     onSplashFinished: () -> Unit = {}
 ) {
-    val scale = remember { Animatable(0.7f) }
+    val scale = remember { Animatable(0.75f) }
     val alpha = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
-        // Hiệu ứng fade in & scale nhẹ
-        alpha.animateTo(1f, animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing))
-        scale.animateTo(1f, animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing))
-        delay(1200) // Dừng một chút để hiển thị thương hiệu
+        alpha.animateTo(1f, animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing))
+        scale.animateTo(1f, animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing))
+        delay(1300)
         onSplashFinished()
     }
 
@@ -89,42 +103,34 @@ fun SplashScreen(
                 .scale(scale.value)
                 .alpha(alpha.value)
         ) {
-            // Icon Logo trắng
-            Box(
-                modifier = Modifier
-                    .size(96.dp)
-                    .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(28.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = HomeverLogoIcon,
-                    contentDescription = "HomEver Logo",
-                    tint = Color.White,
-                    modifier = Modifier.size(54.dp)
-                )
-            }
+            Icon(
+                imageVector = HomeverSplashLogoIcon,
+                contentDescription = "Homever Logo",
+                tint = Color.White,
+                modifier = Modifier.size(108.dp)
+            )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            // Tên ứng dụng
             Text(
                 text = "Homever",
-                fontSize = 34.sp,
-                fontWeight = FontWeight.ExtraBold,
+                fontSize = 38.sp,
+                fontWeight = FontWeight.Bold,
                 color = Color.White,
-                letterSpacing = 1.sp
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Tagline
-            Text(
-                text = "Tìm bạn ở ghép & phòng trọ lý tưởng",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White.copy(alpha = 0.85f)
+                letterSpacing = 0.5.sp
             )
         }
+
+        // Tagline ở đáy màn hình
+        Text(
+            text = "Hợp ý bạn, chuẩn ý phòng",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Normal,
+            color = Color.White.copy(alpha = 0.9f),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 48.dp)
+        )
     }
 }
 

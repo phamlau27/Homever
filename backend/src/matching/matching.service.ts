@@ -154,7 +154,7 @@ export class MatchingService {
 
     // 5. Thú cưng
     if (combined.includes('Không muốn') || combined.includes('Dị ứng')) result.pets = 'Không muốn';
-    else if (combined.includes('Thích thú cưng') || combined.includes('Yêu động vật')) result.pets = 'Thích thú cưng';
+    else if (combined.includes('Rất thích') || combined.includes('Thích thú cưng') || combined.includes('Yêu động vật')) result.pets = 'Thích thú cưng';
     else if (combined.includes('Không quan tâm')) result.pets = 'Không quan tâm';
     else result.pets = 'Có thể ở cùng';
 
@@ -165,27 +165,27 @@ export class MatchingService {
     else result.guests = 'Thỉnh thoảng';
 
     // 7. Quyền riêng tư
-    if (combined.includes('Rất cao')) result.privacy = 'Rất cao';
-    else if (combined.includes('Thoải mái')) result.privacy = 'Thoải mái';
-    else if (combined.includes('Vừa phải')) result.privacy = 'Vừa phải';
+    if (combined.includes('Rất cần riêng tư') || combined.includes('Rất cao')) result.privacy = 'Rất cao';
+    else if (combined.includes('Thích sinh hoạt chung') || combined.includes('Thoải mái')) result.privacy = 'Thoải mái';
+    else if (combined.includes('Cân bằng') || combined.includes('Vừa phải')) result.privacy = 'Vừa phải';
     else result.privacy = 'Khá cao';
 
     // 8. Nấu ăn
-    if (combined.includes('Tự nấu hàng ngày')) result.cooking = 'Tự nấu hàng ngày';
-    else if (combined.includes('Không nấu ăn')) result.cooking = 'Không nấu ăn';
-    else if (combined.includes('Hiếm khi nấu')) result.cooking = 'Hiếm khi nấu';
+    if (combined.includes('Tự nấu hàng ngày') || combined.includes('Thường xuyên')) result.cooking = 'Tự nấu hàng ngày';
+    else if (combined.includes('Hầu như không nấu') || combined.includes('Không nấu ăn')) result.cooking = 'Không nấu ăn';
+    else if (combined.includes('Chủ yếu mua ngoài') || combined.includes('Hiếm khi nấu')) result.cooking = 'Hiếm khi nấu';
     else result.cooking = 'Nấu cuối tuần';
 
     // 9. Chia chi phí
-    if (combined.includes('Dùng bao nhiêu trả bấy nhiêu')) result.costSharing = 'Dùng bao nhiêu trả bấy nhiêu';
-    else if (combined.includes('Linh hoạt')) result.costSharing = 'Linh hoạt';
+    if (combined.includes('Theo sử dụng') || combined.includes('Dùng bao nhiêu trả bấy nhiêu')) result.costSharing = 'Dùng bao nhiêu trả bấy nhiêu';
+    else if (combined.includes('Tự thanh toán') || combined.includes('Linh hoạt')) result.costSharing = 'Linh hoạt';
     else result.costSharing = 'Chia đều tất cả';
 
     // 10. Trách nhiệm việc chung
     if (combined.includes('Rất chủ động')) result.responsibility = 'Rất chủ động';
-    else if (combined.includes('Linh hoạt')) result.responsibility = 'Linh hoạt';
-    else if (combined.includes('Bình thường')) result.responsibility = 'Bình thường';
-    else result.responsibility = 'Theo phân công';
+    else if (combined.includes('Thích phân công rõ ràng') || combined.includes('Theo phân công')) result.responsibility = 'Theo phân công';
+    else if (combined.includes('Linh hoạt theo tình huống') || combined.includes('Linh hoạt')) result.responsibility = 'Linh hoạt';
+    else result.responsibility = 'Bình thường';
 
     return result;
   }

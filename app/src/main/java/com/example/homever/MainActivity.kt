@@ -138,11 +138,6 @@ class MainActivity : ComponentActivity() {
 
                         val isLoggedIn = authRepository.isLoggedIn()
                         val isProfileCompleted = sessionManager.isProfileCompleted()
-                        val startDest = when {
-                            isLoggedIn && isProfileCompleted -> "home"
-                            isLoggedIn && !isProfileCompleted -> "profile"
-                            else -> "login"
-                        }
 
                         LaunchedEffect(Unit) {
                             if (authRepository.isLoggedIn()) {
@@ -156,8 +151,33 @@ class MainActivity : ComponentActivity() {
 
                         NavHost(
                             navController = navController,
-                            startDestination = startDest
+                            startDestination = "splash"
                         ) {
+
+                            // ── Splash Screen (01-splash) ───────────────────────────
+                            composable("splash") {
+                                SplashScreen(
+                                    onSplashFinished = {
+                                        val dest = when {
+                                            isLoggedIn && isProfileCompleted -> "home"
+                                            isLoggedIn && !isProfileCompleted -> "profile"
+                                            else -> "onboarding"
+                                        }
+                                        navController.navigate(dest) {
+                                            popUpTo("splash") { inclusive = true }
+                                        }
+                                    }
+                                )
+                            }
+
+                            // ── Onboarding Screen (02-onboarding) ───────────────────
+                            composable("onboarding") {
+                                OnboardingScreen(
+                                    onStartClick = {
+                                        navController.navigate("login")
+                                    }
+                                )
+                            }
 
                             // ── Login ───────────────────────────────────────────────
                             composable("login") {
@@ -411,7 +431,7 @@ class MainActivity : ComponentActivity() {
                                         authManager.startLogout(
                                             launcher = logoutLauncher,
                                             onLocalFallback = {
-                                                navController.navigate("login") {
+                                                navController.navigate("onboarding") {
                                                     popUpTo(0) { inclusive = true }
                                                 }
                                             }
