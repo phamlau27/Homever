@@ -8,6 +8,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.homever.ui.theme.*
+import java.util.Calendar
+
 
 val ProfArrowBackIcon: ImageVector
     get() = ImageVector.Builder(
@@ -57,7 +61,7 @@ val ProfKeyboardArrowDownIcon: ImageVector
         }
     }.build()
 
-private val genderOptions = listOf("Nam", "Nữ", "Khác")
+private val genderOptions = listOf("Nam", "Nữ")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,6 +85,14 @@ fun ProfileScreen(
     var occupation by remember { mutableStateOf(initialOccupation) }
     var avatarUriState by remember { mutableStateOf<Uri?>(null) }
     var genderExpanded by remember { mutableStateOf(false) }
+    var showYearPicker by remember { mutableStateOf(false) }
+
+    val currentYear = remember { Calendar.getInstance().get(Calendar.YEAR) }
+    // Years from 1960 to currentYear - 16
+    val years = remember { (currentYear - 16 downTo 1960).toList() }
+    val selectedYear = remember(age) {
+        age.toIntOrNull()?.let { ageVal -> currentYear - ageVal } ?: (currentYear - 22)
+    }
 
     LaunchedEffect(avatarUri) { avatarUriState = avatarUri }
 
@@ -241,13 +253,116 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        ProfileInputField(
-            label = "Tuổi *",
-            value = age,
-            onValueChange = { if (it.length <= 3 && it.all { c -> c.isDigit() }) age = it },
-            placeholder = "Ví dụ: 24",
-            keyboardType = KeyboardType.Number
-        )
+        // Year of birth picker
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "Năm sinh *",
+                fontSize = 13.sp,
+                color = HomeverTextGray,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = if (age.isNotBlank()) {
+                    val ageVal = age.toIntOrNull()
+                    if (ageVal != null) "${currentYear - ageVal}" else ""
+                } else "",
+                onValueChange = {},
+                readOnly = true,
+                placeholder = { Text("Chọn năm sinh", color = Color(0xFFA0AAB0)) },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = showYearPicker)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showYearPicker = true },
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = HomeverGrayBorder,
+                    focusedBorderColor = BluePrimary,
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
+                ),
+                textStyle = TextStyle(fontSize = 15.sp, color = HomeverTextDark),
+                enabled = false
+            )
+            // Show age info
+            if (age.isNotBlank()) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "(${age} tuổi)",
+                    fontSize = 12.sp,
+                    color = BluePrimary
+                )
+            }
+        }
+
+        // Year picker dialog
+        if (showYearPicker) {
+
+            val initialIdx = years.indexOf(selectedYear).coerceAtLeast(0)
+            val listState = rememberLazyListState(initialFirstVisibleItemIndex = (initialIdx - 2).coerceAtLeast(0))
+
+            AlertDialog(
+                onDismissRequest = { showYearPicker = false },
+                title = {
+                    Text(
+                        "Chọn năm sinh",
+                        fontWeight = FontWeight.Bold,
+                        color = TitleBlue
+                    )
+                },
+                text = {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp)
+                    ) {
+                        items(years.size) { index ->
+                            val year = years[index]
+                            val isSelected = year == selectedYear
+                            val computedAge = currentYear - year
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        if (isSelected) Color(0xFFDDF4FF) else Color.Transparent,
+                                        RoundedCornerShape(10.dp)
+                                    )
+                                    .clickable {
+                                        age = computedAge.toString()
+                                        showYearPicker = false
+                                    }
+                                    .padding(vertical = 14.dp, horizontal = 16.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = year.toString(),
+                                        fontSize = 16.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) BluePrimary else HomeverTextDark
+                                    )
+                                    Text(
+                                        text = "($computedAge tuổi)",
+                                        fontSize = 14.sp,
+                                        color = TextGray
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showYearPicker = false }) {
+                        Text("Đóng", color = BluePrimary)
+                    }
+                }
+            )
+        }
 
         Spacer(Modifier.height(16.dp))
 

@@ -40,6 +40,10 @@ class ProfileViewModel(
     private val _avatarUri = MutableStateFlow<Uri?>(null)
     val avatarUri: StateFlow<Uri?> = _avatarUri.asStateFlow()
 
+    // ── Photos for Carousel / Profile ──────────────────────────────────────
+    private val _tempPhotos = MutableStateFlow<List<Uri>>(emptyList())
+    val tempPhotos: StateFlow<List<Uri>> = _tempPhotos.asStateFlow()
+
     // ── Onboarding temp data (StateFlow so recomposition doesn't lose values) ──
     private val _tempDisplayName = MutableStateFlow("")
     val tempDisplayName: StateFlow<String> = _tempDisplayName.asStateFlow()
@@ -183,6 +187,13 @@ class ProfileViewModel(
                     onComplete?.invoke(false, null)
                 }
             )
+        }
+    }
+
+    fun savePhotosLocally(photos: List<Uri>) {
+        _tempPhotos.value = photos
+        if (_avatarUri.value == null && photos.isNotEmpty()) {
+            _avatarUri.value = photos.first()
         }
     }
 

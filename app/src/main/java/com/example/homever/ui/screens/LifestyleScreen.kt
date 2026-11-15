@@ -331,21 +331,21 @@ fun LifestyleScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // ── Step 1 Choices ───────────────────────────────────────────────
-    var genderPref by remember { mutableStateOf("Mọi người") }
-    var schedulePref by remember { mutableStateOf("Cú đêm") }
-    var noisePref by remember { mutableStateOf("Khá yên tĩnh") }
-    var tidinessPref by remember { mutableStateOf("Rất gọn gàng") }
-    var smokingPref by remember { mutableStateOf("Không hút") }
+    var genderPref by remember { mutableStateOf("") }
+    var schedulePref by remember { mutableStateOf("") }
+    var noisePref by remember { mutableStateOf("") }
+    var tidinessPref by remember { mutableStateOf("") }
+    var smokingPref by remember { mutableStateOf("") }
 
     // ── Step 2 Choices ───────────────────────────────────────────────
-    var petsPref by remember { mutableStateOf("Có thể sống cùng") }
-    var guestsPref by remember { mutableStateOf("Thỉnh thoảng") }
-    var privacyPref by remember { mutableStateOf("Cân bằng") }
+    var petsPref by remember { mutableStateOf("") }
+    var guestsPref by remember { mutableStateOf("") }
+    var privacyPref by remember { mutableStateOf("") }
 
     // ── Step 3 Choices ───────────────────────────────────────────────
-    var cookingPref by remember { mutableStateOf("Thỉnh thoảng") }
-    var responsibilityPref by remember { mutableStateOf("Thích phân công rõ ràng") }
-    var costSharingPref by remember { mutableStateOf("Chia đều") }
+    var cookingPref by remember { mutableStateOf("") }
+    var responsibilityPref by remember { mutableStateOf("") }
+    var costSharingPref by remember { mutableStateOf("") }
 
     // Android back button intercepts inside multi-step flow
     BackHandler(enabled = currentStep > 1) {
@@ -671,7 +671,10 @@ fun LifestyleQuestionCard(
             .padding(16.dp)
     ) {
         Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Box(
                     modifier = Modifier
                         .size(42.dp)
@@ -686,7 +689,7 @@ fun LifestyleQuestionCard(
                     )
                 }
                 Spacer(Modifier.width(12.dp))
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = title,
                         fontSize = 15.sp,
@@ -708,7 +711,7 @@ fun LifestyleQuestionCard(
                 rows.forEach { rowItems ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         rowItems.forEach { text ->
-                            val isSelected = text == selectedValue
+                            val isSelected = text.isNotBlank() && text == selectedValue
                             Box(
                                 modifier = Modifier
                                     .background(

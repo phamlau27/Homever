@@ -10,7 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,6 +70,7 @@ fun ReviewProfileScreen(
     isLoading: Boolean = false,
     errorMessage: String? = null,
     onBack: () -> Unit = {},
+    onBioChanged: (String) -> Unit = {},
     onNext: () -> Unit = {}
 ) {
     val displayNeed = if (needType == "room") "Tôi cần tìm phòng" else "Tôi tìm bạn cùng phòng"
@@ -78,6 +79,9 @@ fun ReviewProfileScreen(
         gender.ifBlank { null },
         occupation.ifBlank { null }
     ).filterNotNull().joinToString(" • ")
+
+    var isEditingBio by remember { mutableStateOf(false) }
+    var editableBio by remember { mutableStateOf(bio) }
 
     Column(
         modifier = modifier
@@ -150,7 +154,10 @@ fun ReviewProfileScreen(
             HorizontalDivider(color = HomeverGrayBorder)
             Spacer(Modifier.height(16.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { isEditingBio = !isEditingBio }
+            ) {
                 Text(
                     "GIỚI THIỆU BẢN THÂN",
                     fontSize = 11.sp,
@@ -162,16 +169,40 @@ fun ReviewProfileScreen(
                 Icon(
                     imageVector = ReviewEditIcon,
                     contentDescription = "Chỉnh sửa",
-                    modifier = Modifier.size(14.dp)
+                    modifier = Modifier.size(14.dp),
+                    tint = if (isEditingBio) BluePrimary else HomeverTextGray
                 )
             }
             Spacer(Modifier.height(8.dp))
-            Text(
-                text = bio.ifBlank { "Chưa nhập giới thiệu bản thân." },
-                fontSize = 13.sp,
-                color = if (bio.isBlank()) TextGray.copy(alpha = 0.6f) else TextGray,
-                lineHeight = 20.sp
-            )
+            if (isEditingBio) {
+                OutlinedTextField(
+                    value = editableBio,
+                    onValueChange = {
+                        editableBio = it
+                        onBioChanged(it)
+                    },
+                    placeholder = { Text("Viết vài dòng giới thiệu về bản thân...", color = Color(0xFFA0AAB0), fontSize = 13.sp) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 80.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = HomeverGrayBorder,
+                        focusedBorderColor = BluePrimary,
+                        unfocusedContainerColor = Color.White,
+                        focusedContainerColor = Color.White
+                    ),
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, color = HomeverTextDark, lineHeight = 20.sp),
+                    maxLines = 5
+                )
+            } else {
+                Text(
+                    text = editableBio.ifBlank { "Chưa nhập giới thiệu bản thân. Nhấn để viết." },
+                    fontSize = 13.sp,
+                    color = if (editableBio.isBlank()) TextGray.copy(alpha = 0.6f) else TextGray,
+                    lineHeight = 20.sp
+                )
+            }
         }
 
         Spacer(Modifier.height(16.dp))

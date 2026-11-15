@@ -109,7 +109,8 @@ data class RoommateCandidate(
     val avatarUrl: String? = null,
     val lifestyle: String? = null,
     val traits: String? = null,
-    val needType: String? = null
+    val needType: String? = null,
+    val photos: List<String> = emptyList()
 )
 
 val sampleCandidates = listOf(
@@ -119,7 +120,7 @@ val sampleCandidates = listOf(
         occupation = "Sinh viên ĐH Ngoại Thương",
         location = "Thủ Đức, TP.HCM",
         budget = "3 - 4 triệu/tháng",
-        tags = listOf("Cú đêm", "Gọn gàng", "Không hút thuốc"),
+        tags = listOf("Cú đêm", "Gọn gàng", "Không hút thuốc", "Thích nấu ăn", "Cần riêng tư", "Rất yên tĩnh", "Không nuôi thú cưng", "Thỉnh thoảng tiếp khách", "Chia đều chi phí", "Tự giác việc chung"),
         bio = "Thích không gian yên tĩnh học tập, nấu ăn cuối tuần.",
         gradientColors = listOf(Color(0xFF3B82F6), Color(0xFF1E3A8A))
     ),
@@ -129,7 +130,7 @@ val sampleCandidates = listOf(
         occupation = "Software Engineer",
         location = "Quận 1, TP.HCM",
         budget = "4 - 6 triệu/tháng",
-        tags = listOf("Dậy sớm", "Rất sạch sẽ", "Yêu động vật"),
+        tags = listOf("Dậy sớm", "Rất sạch sẽ", "Yêu động vật", "Không hút thuốc", "Thoải mái riêng tư", "Nấu ăn cuối tuần", "Thích phân công", "Linh hoạt chi phí"),
         bio = "Làm việc hybrid, hòa đồng, ngăn nắp và tôn trọng riêng tư.",
         gradientColors = listOf(Color(0xFF10B981), Color(0xFF065F46))
     ),
@@ -139,7 +140,7 @@ val sampleCandidates = listOf(
         occupation = "Sinh viên ĐH Bách Khoa",
         location = "Quận 10, TP.HCM",
         budget = "2.5 - 3.5 triệu/tháng",
-        tags = listOf("Thích yên tĩnh", "Sống ngăn nắp", "Thích nấu ăn"),
+        tags = listOf("Thích yên tĩnh", "Sống ngăn nắp", "Thích nấu ăn", "Không hút thuốc", "Có thể ở cùng thú cưng", "Hiếm khi có khách", "Chia đều chi phí", "Rất chủ động việc chung"),
         bio = "Mong tìm bạn cùng phòng vui vẻ, tử tế để ở lâu dài.",
         gradientColors = listOf(Color(0xFF8B5CF6), Color(0xFF4C1D95))
     ),
@@ -149,7 +150,7 @@ val sampleCandidates = listOf(
         occupation = "Graphic Designer",
         location = "Bình Thạnh, TP.HCM",
         budget = "3.5 - 5 triệu/tháng",
-        tags = listOf("Linh hoạt", "Cởi mở", "Thích âm nhạc"),
+        tags = listOf("Linh hoạt", "Cởi mở", "Thích âm nhạc", "Cú đêm", "Khá gọn gàng", "Không hút thuốc", "Thích sinh hoạt chung", "Chủ yếu mua ngoài"),
         bio = "Hay vẽ tranh và nghe nhạc nhẹ nhàng, gọn gàng văn minh.",
         gradientColors = listOf(Color(0xFFF59E0B), Color(0xFF92400E))
     )
@@ -165,8 +166,14 @@ fun DiscoverScreen(
 ) {
     var candidates by remember { mutableStateOf(sampleCandidates) }
     var currentIndex by remember { mutableStateOf(0) }
+    var currentPhotoIndex by remember { mutableStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
+
+    // Reset photo index when switching candidates
+    LaunchedEffect(currentIndex) {
+        currentPhotoIndex = 0
+    }
 
     fun fetchCandidates() {
         isLoading = true
@@ -195,7 +202,7 @@ fun DiscoverScreen(
                                 occupation = p.occupation.ifBlank { "Sinh viên / Đi làm" },
                                 location = p.location ?: "TP.HCM",
                                 budget = p.budget ?: "Thỏa thuận",
-                                tags = tagsList.take(3),
+                                tags = tagsList,
                                 bio = p.bio ?: "Tìm bạn cùng phòng hòa đồng, tôn trọng không gian chung.",
                                 matchPercentage = item.score.percentage,
                                 gradientColors = colorPalettes[idx % colorPalettes.size],
@@ -227,6 +234,30 @@ fun DiscoverScreen(
 
     val candidate = candidates.getOrElse(currentIndex) { sampleCandidates[0] }
 
+    // Collect all candidate photos: avatarUrl + any additional photos
+    val candidatePhotos = remember(candidate) {
+        val list = mutableListOf<String>()
+        if (!candidate.avatarUrl.isNullOrBlank()) {
+            list.addAll(candidate.avatarUrl.split(",").map { it.trim() }.filter { it.isNotBlank() })
+        }
+        list.addAll(candidate.photos.filter { it.isNotBlank() })
+        list.distinct()
+    }
+
+    // Determine how many tags to display based on candidate criteria:
+    // If user has written a bio -> display up to 10 criteria
+    // Otherwise 5 criteria per 2 photos
+    val displayTags = remember(candidate, candidatePhotos) {
+        val count = if (candidate.bio.isNotBlank()) {
+            10
+        } else if (candidatePhotos.size >= 2) {
+            5
+        } else {
+            3
+        }
+        candidate.tags.take(count)
+    }
+
     Scaffold(
         bottomBar = {
             AppBottomNavigation(
@@ -246,10 +277,11 @@ fun DiscoverScreen(
                     .background(Brush.verticalGradient(candidate.gradientColors)),
                 contentAlignment = Alignment.Center
             ) {
-                val displayAvatar = candidate.avatarUrl?.split(",")?.firstOrNull { it.isNotBlank() }
-                if (!displayAvatar.isNullOrBlank()) {
+                val currentPhotoUrl = candidatePhotos.getOrNull(currentPhotoIndex)
+                    ?: candidate.avatarUrl?.split(",")?.firstOrNull { it.isNotBlank() }
+                if (!currentPhotoUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = displayAvatar,
+                        model = currentPhotoUrl,
                         contentDescription = candidate.name,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -275,6 +307,64 @@ fun DiscoverScreen(
                             color = Color.White,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            // Interactive Tap Zones:
+            // Tap left half of screen -> switch to next photo (per user request)
+            // Tap right half of screen -> switch to previous photo (or next if desired)
+            Row(modifier = Modifier.fillMaxSize()) {
+                // Left half tap zone: next photo
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable(
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            if (candidatePhotos.isNotEmpty()) {
+                                currentPhotoIndex = (currentPhotoIndex + 1) % candidatePhotos.size
+                            }
+                        }
+                )
+
+                // Right half tap zone: previous photo
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable(
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            if (candidatePhotos.isNotEmpty()) {
+                                currentPhotoIndex = if (currentPhotoIndex - 1 < 0) candidatePhotos.size - 1 else currentPhotoIndex - 1
+                            }
+                        }
+                )
+            }
+
+            // Photo indicator dots (if multiple photos available)
+            if (candidatePhotos.size > 1) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 80.dp, start = 24.dp, end = 24.dp)
+                        .align(Alignment.TopCenter),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    candidatePhotos.indices.forEach { idx ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(4.dp)
+                                .background(
+                                    color = if (idx == currentPhotoIndex) Color.White else Color.White.copy(alpha = 0.4f),
+                                    shape = RoundedCornerShape(2.dp)
+                                )
                         )
                     }
                 }
@@ -324,10 +414,10 @@ fun DiscoverScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(420.dp)
+                    .height(440.dp)
                     .align(Alignment.BottomCenter)
-                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))))
-                    .padding(horizontal = 24.dp, vertical = 24.dp)
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.88f))))
+                    .padding(horizontal = 24.dp, vertical = 20.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -383,13 +473,19 @@ fun DiscoverScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        candidate.tags.forEach { tag ->
-                            TagPill(tag)
+                    // Criteria Tags: Chunked into rows of up to 3 pills
+                    displayTags.chunked(3).take(3).forEach { rowTags ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        ) {
+                            rowTags.forEach { tag ->
+                                TagPill(tag)
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(28.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
