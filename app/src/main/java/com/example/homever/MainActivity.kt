@@ -135,9 +135,23 @@ class MainActivity : ComponentActivity() {
                     Box(modifier = Modifier.padding(innerPadding)) {
                         val navController = rememberNavController()
 
-                        val startDest = if (authRepository.isLoggedIn() &&
-                            sessionManager.isProfileCompleted()
-                        ) "home" else "login"
+                        val isLoggedIn = authRepository.isLoggedIn()
+                        val isProfileCompleted = sessionManager.isProfileCompleted()
+                        val startDest = when {
+                            isLoggedIn && isProfileCompleted -> "home"
+                            isLoggedIn && !isProfileCompleted -> "profile"
+                            else -> "login"
+                        }
+
+                        LaunchedEffect(Unit) {
+                            if (authRepository.isLoggedIn()) {
+                                profileViewModel.loadProfile { profileExists ->
+                                    if (profileExists) {
+                                        sessionManager.saveProfileCompleted(true)
+                                    }
+                                }
+                            }
+                        }
 
                         NavHost(
                             navController = navController,
@@ -217,11 +231,9 @@ class MainActivity : ComponentActivity() {
                                         profileViewModel.updateAvatarUri(uri)
                                     },
                                     onBack = {
-                                        authViewModel.signOut()
-                                        sessionManager.clearSession()
-                                        authManager.clearAuthState()
-                                        navController.navigate("login") {
-                                            popUpTo(0) { inclusive = true }
+                                        // Do NOT clear Cognito session tokens. Allow user to navigate back safely.
+                                        if (!navController.popBackStack()) {
+                                            finish()
                                         }
                                     },
                                     onComplete = { name, gender, age, occ ->
@@ -361,8 +373,13 @@ class MainActivity : ComponentActivity() {
                             composable("personal_profile") {
                                 PersonalProfileScreen(
                                     displayName = tempDisplayName.ifBlank { "Người dùng" },
+                                    gender = tempGender,
                                     age = tempAge,
                                     occupation = tempOccupation,
+                                    needType = tempNeedType,
+                                    lifestyle = tempLifestyle,
+                                    budget = tempBudget,
+                                    location = tempLocation,
                                     bio = tempBio,
                                     onSettingsClick = {
                                         navController.navigate("account_settings")

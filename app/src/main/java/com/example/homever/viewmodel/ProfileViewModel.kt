@@ -32,6 +32,10 @@ class ProfileViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    // ── Current User Profile ───────────────────────────────────────────────
+    private val _currentProfile = MutableStateFlow<UserProfile?>(null)
+    val currentProfile: StateFlow<UserProfile?> = _currentProfile.asStateFlow()
+
     // ── Avatar (optional — S3 upload deferred) ─────────────────────────────
     private val _avatarUri = MutableStateFlow<Uri?>(null)
     val avatarUri: StateFlow<Uri?> = _avatarUri.asStateFlow()
@@ -96,6 +100,19 @@ class ProfileViewModel(
         _avatarUri.value = uri
     }
 
+    private fun populateFromProfile(profile: UserProfile) {
+        _currentProfile.value = profile
+        _tempDisplayName.value = profile.displayName
+        _tempGender.value = profile.gender
+        _tempAge.value = if (profile.age > 0) profile.age.toString() else ""
+        _tempOccupation.value = profile.occupation
+        _tempNeedType.value = profile.needType ?: "roommate"
+        _tempLifestyle.value = profile.lifestyle ?: ""
+        _tempBudget.value = profile.budget ?: ""
+        _tempLocation.value = profile.location ?: ""
+        _tempBio.value = profile.bio ?: ""
+    }
+
     fun clearError() {
         _errorMessage.value = null
         if (_status.value == ProfileStatus.ERROR) {
@@ -114,19 +131,27 @@ class ProfileViewModel(
      */
     fun checkProfileExists(onResult: (exists: Boolean?, isUnauthorized: Boolean) -> Unit) {
         viewModelScope.launch {
+            _status.value = ProfileStatus.LOADING
             val result = profileRepository.getMyProfile()
             result.fold(
                 onSuccess = { profile ->
                     // A profile is considered "existing" only when displayName has been set.
                     if (profile.displayName.isNotBlank()) {
+                        populateFromProfile(profile)
+                        _status.value = ProfileStatus.SUCCESS
                         onResult(true, false)
                     } else {
+                        _currentProfile.value = profile
+                        _status.value = ProfileStatus.IDLE
                         onResult(false, false)
                     }
                 },
                 onFailure = { error ->
                     when (error.message) {
-                        "PROFILE_NOT_FOUND" -> onResult(false, false)
+                        "PROFILE_NOT_FOUND" -> {
+                            _status.value = ProfileStatus.IDLE
+                            onResult(false, false)
+                        }
                         "UNAUTHORIZED" -> {
                             _status.value = ProfileStatus.UNAUTHORIZED
                             _errorMessage.value = "Phiên đăng nhập đã hết hạn"
@@ -135,10 +160,44 @@ class ProfileViewModel(
                         else -> {
                             // Network / server error — preserve session, let caller decide.
                             Log.e("ProfileViewModel", "checkProfileExists failed: ${error.message}", error)
+                            _status.value = ProfileStatus.ERROR
                             _errorMessage.value = "Lỗi kết nối máy chủ khi kiểm tra hồ sơ: ${error.message}"
                             onResult(null, false)
                         }
                     }
+                }
+            )
+        }
+    }
+
+    /**
+     * Fetches current user profile from GET /v1/users/me and populates all StateFlow fields.
+     */
+    fun loadProfile(onComplete: ((Boolean) -> Unit)? = null) {
+        viewModelScope.launch {
+            _status.value = ProfileStatus.LOADING
+            val result = profileRepository.getMyProfile()
+            result.fold(
+                onSuccess = { profile ->
+                    if (profile.displayName.isNotBlank()) {
+                        populateFromProfile(profile)
+                        _status.value = ProfileStatus.SUCCESS
+                        onComplete?.invoke(true)
+                    } else {
+                        _currentProfile.value = profile
+                        _status.value = ProfileStatus.IDLE
+                        onComplete?.invoke(false)
+                    }
+                },
+                onFailure = { error ->
+                    Log.e("ProfileViewModel", "loadProfile failed: ${error.message}", error)
+                    if (error.message == "UNAUTHORIZED") {
+                        _status.value = ProfileStatus.UNAUTHORIZED
+                    } else {
+                        _status.value = ProfileStatus.ERROR
+                        _errorMessage.value = error.localizedMessage
+                    }
+                    onComplete?.invoke(false)
                 }
             )
         }
@@ -184,7 +243,8 @@ class ProfileViewModel(
                 val updateResult = profileRepository.updateMyProfile(profile)
 
                 updateResult.fold(
-                    onSuccess = {
+                    onSuccess = { updatedProfile ->
+                        populateFromProfile(updatedProfile)
                         _status.value = ProfileStatus.SUCCESS
                         isSubmitting = false
                         onSuccess()
