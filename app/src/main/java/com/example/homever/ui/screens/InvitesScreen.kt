@@ -102,12 +102,14 @@ fun InvitesScreen(modifier: Modifier = Modifier, initialTab: Int = 0) {
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.White,
-                contentColor = CustomBluePrimary,
+                contentColor = InvitesBluePrimary,
                 indicator = { tabPositions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = CustomBluePrimary
-                    )
+                    if (selectedTab < tabPositions.size) {
+                        TabRowDefaults.SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            color = InvitesBluePrimary
+                        )
+                    }
                 }
             ) {
                 Tab(

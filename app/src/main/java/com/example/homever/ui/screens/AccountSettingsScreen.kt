@@ -3,6 +3,7 @@ package com.example.homever.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -21,11 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.homever.ui.theme.HomEverTheme
-
-private val AccBlue = Color(0xFF2962FF)
-private val AccBgGray = Color(0xFFF9FAFB)
-private val AccTextGray = Color(0xFF6B7280)
+import com.example.homever.ui.theme.*
 
 private val AccArrowBackIcon: ImageVector
     get() = ImageVector.Builder(name = "ArrowBack", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f).apply {
@@ -42,57 +39,63 @@ private val AccChevronRightIcon: ImageVector
     }.build()
 
 @Composable
-fun AccountSettingsScreen() {
+fun AccountSettingsScreen(
+    onBackClick: () -> Unit = {},
+    onLogoutClick: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AccBgGray)
+            .background(BgGray)
             .padding(horizontal = 24.dp, vertical = 48.dp)
             .verticalScroll(rememberScrollState())
     ) {
         // Top Bar
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable { onBackClick() }
+        ) {
             Icon(imageVector = AccArrowBackIcon, contentDescription = "Back")
             Spacer(modifier = Modifier.width(16.dp))
-            Text("Cài đặt tài khoản", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = AccBlue)
+            Text("Cài đặt tài khoản", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = BluePrimary)
         }
         
         Spacer(modifier = Modifier.height(32.dp))
         
-        Text("CÁ NHÂN HÓA & BẢO MẬT", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = AccTextGray, letterSpacing = 0.5.sp)
+        Text("CÁ NHÂN HÓA & BẢO MẬT", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextGray, letterSpacing = 0.5.sp)
         Spacer(modifier = Modifier.height(12.dp))
         
         SettingsSection(
             items = listOf(
-                SettingsItem("Quyền riêng tư", "Quản lý hiển thị hồ sơ & thông tin", Color(0xFFE0E7FF), AccBlue, null),
-                SettingsItem("Thông báo", "Cài đặt đẩy và nhắc nhở ghép phòng", Color(0xFFE0E7FF), AccBlue, "2"),
-                SettingsItem("An toàn & Xác thực", "Xác minh căn cước công dân (eKYC)", Color(0xFFD1FAE5), Color(0xFF059669), null)
+                SettingsItem("Quyền riêng tư", "Quản lý hiển thị hồ sơ & thông tin", Color(0xFFE0E7FF), BluePrimary, null),
+                SettingsItem("Thông báo", "Cài đặt đẩy và nhắc nhở ghép phòng", Color(0xFFE0E7FF), BluePrimary, "2"),
+                SettingsItem("An toàn & Xác thực", "Xác minh căn cước công dân (eKYC)", Color(0xFFD1FAE5), HomeverGreen, null)
             )
         )
         
         Spacer(modifier = Modifier.height(32.dp))
         
-        Text("HỖ TRỢ & CỘNG ĐỒNG", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = AccTextGray, letterSpacing = 0.5.sp)
+        Text("HỖ TRỢ & CỘNG ĐỒNG", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextGray, letterSpacing = 0.5.sp)
         Spacer(modifier = Modifier.height(12.dp))
         
         SettingsSection(
             items = listOf(
-                SettingsItem("Danh sách chặn", "Quản lý những roommate đã chặn", Color(0xFFE0E7FF), AccBlue, null),
-                SettingsItem("Báo cáo & Phản hồi", "Gửi báo cáo lỗi hoặc đóng góp ý kiến", Color(0xFFE0E7FF), AccBlue, null),
-                SettingsItem("Trung tâm trợ giúp", "Câu hỏi thường gặp & Hướng dẫn sử dụng", Color(0xFFE0E7FF), AccBlue, null)
+                SettingsItem("Danh sách chặn", "Quản lý những roommate đã chặn", Color(0xFFE0E7FF), BluePrimary, null),
+                SettingsItem("Báo cáo & Phản hồi", "Gửi báo cáo lỗi hoặc đóng góp ý kiến", Color(0xFFE0E7FF), BluePrimary, null),
+                SettingsItem("Trung tâm trợ giúp", "Câu hỏi thường gặp & Hướng dẫn sử dụng", Color(0xFFE0E7FF), BluePrimary, null)
             )
         )
         
         Spacer(modifier = Modifier.height(40.dp))
         
         OutlinedButton(
-            onClick = { /*TODO*/ },
+            onClick = onLogoutClick,
             modifier = Modifier.fillMaxWidth().height(54.dp),
             shape = RoundedCornerShape(28.dp),
             border = BorderStroke(1.dp, Color(0xFFF87171)),
-            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFFFEF2F2))
+            colors = ButtonDefaults.outlinedButtonColors(containerColor = HomeverRedLight)
         ) {
-            Text("Đăng xuất", color = Color(0xFFEF4444), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("Đăng xuất", color = HomeverRed, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
         
         Spacer(modifier = Modifier.height(24.dp))
@@ -100,7 +103,7 @@ fun AccountSettingsScreen() {
         Text(
             "Phiên bản ứng dụng v2.4.0 (Build 1205)", 
             fontSize = 11.sp, 
-            color = AccTextGray,
+            color = TextGray,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -117,7 +120,7 @@ fun SettingsSection(items: List<SettingsItem>) {
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White, RoundedCornerShape(16.dp))
-            .border(1.dp, Color(0xFFE5E7EB), RoundedCornerShape(16.dp))
+            .border(1.dp, HomeverGrayBorder, RoundedCornerShape(16.dp))
     ) {
         Column {
             items.forEachIndexed { index, item ->
@@ -126,16 +129,16 @@ fun SettingsSection(items: List<SettingsItem>) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(modifier = Modifier.size(36.dp).background(item.iconBg, CircleShape), contentAlignment = Alignment.Center) {
-                        Box(modifier = Modifier.size(16.dp).background(item.iconColor, CircleShape)) // Mock icon
+                        Box(modifier = Modifier.size(16.dp).background(item.iconColor, CircleShape))
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(item.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1F2937))
-                        Text(item.subtitle, fontSize = 12.sp, color = AccTextGray)
+                        Text(item.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = HomeverTextDark)
+                        Text(item.subtitle, fontSize = 12.sp, color = TextGray)
                     }
                     
                     if (item.badge != null) {
-                        Box(modifier = Modifier.background(AccBlue, CircleShape).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                        Box(modifier = Modifier.background(BluePrimary, CircleShape).padding(horizontal = 6.dp, vertical = 2.dp)) {
                             Text(item.badge, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
                         Spacer(modifier = Modifier.width(8.dp))
@@ -145,7 +148,7 @@ fun SettingsSection(items: List<SettingsItem>) {
                 }
                 
                 if (index < items.size - 1) {
-                    HorizontalDivider(color = Color(0xFFE5E7EB), modifier = Modifier.padding(start = 64.dp))
+                    HorizontalDivider(color = HomeverGrayBorder, modifier = Modifier.padding(start = 64.dp))
                 }
             }
         }

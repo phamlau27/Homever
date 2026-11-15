@@ -34,12 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.homever.ui.theme.HomEverTheme
-
-val BluePrimary = Color(0xFF2962FF)
-val TextGray = Color(0xFF6B7280)
-val BgGray = Color(0xFFF9FAFB)
-val TitleBlue = Color(0xFF1E3A8A)
+import com.example.homever.ui.theme.*
 
 val ArrowDownIcon: ImageVector
     get() = ImageVector.Builder(
@@ -60,7 +55,10 @@ val ArrowDownIcon: ImageVector
     }.build()
 
 @Composable
-fun OnboardingScreen(modifier: Modifier = Modifier) {
+fun OnboardingScreen(
+    modifier: Modifier = Modifier,
+    onStartClick: () -> Unit = {}
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -114,17 +112,10 @@ fun OnboardingScreen(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth(0.8f)
                 .aspectRatio(1f)
-                .background(Color(0xFFF0EBE1), RoundedCornerShape(16.dp)), // Light warm background similar to illustration
+                .background(Color(0xFFF0EBE1), RoundedCornerShape(16.dp)),
             contentAlignment = Alignment.Center
         ) {
             Text(text = "Hình minh hoạ", color = TextGray)
-            // In a real app, replace Box with:
-            // Image(
-            //     painter = painterResource(id = R.drawable.ic_onboarding_illustration),
-            //     contentDescription = "Onboarding Illustration",
-            //     modifier = Modifier.fillMaxSize(),
-            //     contentScale = ContentScale.Crop
-            // )
         }
         
         Spacer(modifier = Modifier.height(40.dp))
@@ -181,7 +172,7 @@ fun OnboardingScreen(modifier: Modifier = Modifier) {
         
         // Button
         Button(
-            onClick = { /* Handle click */ },
+            onClick = onStartClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),

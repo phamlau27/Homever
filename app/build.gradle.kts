@@ -54,9 +54,6 @@ dependencies {
     // AppAuth for Cognito
     implementation("net.openid:appauth:0.11.1")
     
-    // AWS SDK for Kotlin (Cognito Native OTP/SRP)
-    implementation("aws.sdk.kotlin:cognitoidentityprovider:1.2.33")
-    
     // Security Crypto for EncryptedSharedPreferences
     implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
     

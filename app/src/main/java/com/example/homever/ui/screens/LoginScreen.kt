@@ -1,45 +1,15 @@
 package com.example.homever.ui.screens
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.border
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -49,52 +19,43 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.homever.ui.theme.HomEverTheme
+import com.example.homever.ui.theme.*
 
+// ── Google "G" icon (simplified coloured ring) ─────────────────────────────
 val GoogleIcon: ImageVector
     get() = ImageVector.Builder(
         name = "Google",
-        defaultWidth = 24.dp,
-        defaultHeight = 24.dp,
-        viewportWidth = 24f,
-        viewportHeight = 24f
+        defaultWidth = 24.dp, defaultHeight = 24.dp,
+        viewportWidth = 24f, viewportHeight = 24f
     ).apply {
-        path(
-            stroke = SolidColor(BluePrimary),
-            strokeLineWidth = 2f
-        ) {
+        // Outer circle outline
+        path(stroke = SolidColor(Color(0xFF4285F4)), strokeLineWidth = 2f) {
             moveTo(12f, 22f)
             arcTo(10f, 10f, 0f, true, false, 12f, 2f)
             arcTo(10f, 10f, 0f, true, false, 12f, 22f)
             close()
-            moveTo(8f, 12f)
-            lineTo(16f, 12f)
-            moveTo(12f, 8f)
-            lineTo(16f, 12f)
-            lineTo(12f, 16f)
+        }
+        // "G" cross-bar
+        path(stroke = SolidColor(Color(0xFF4285F4)), strokeLineWidth = 2f) {
+            moveTo(17f, 12f); lineTo(12f, 12f); lineTo(12f, 17f)
+        }
+        path(stroke = SolidColor(Color(0xFF4285F4)), strokeLineWidth = 2f) {
+            moveTo(12f, 12f); lineTo(7.5f, 12f)
         }
     }.build()
 
-val FacebookIcon: ImageVector
+// ── Homever logo "H" mark ──────────────────────────────────────────────────
+private val HomeverLogoIcon: ImageVector
     get() = ImageVector.Builder(
-        name = "Facebook",
-        defaultWidth = 24.dp,
-        defaultHeight = 24.dp,
-        viewportWidth = 24f,
-        viewportHeight = 24f
+        name = "HomeverLogo",
+        defaultWidth = 32.dp, defaultHeight = 32.dp,
+        viewportWidth = 32f, viewportHeight = 32f
     ).apply {
-        path(
-            stroke = SolidColor(BluePrimary),
-            strokeLineWidth = 2f
-        ) {
-            moveTo(14f, 2f)
-            lineTo(12f, 2f)
-            arcTo(4f, 4f, 0f, false, false, 8f, 6f)
-            lineTo(8f, 10f)
-            moveTo(6f, 10f)
-            lineTo(14f, 10f)
-            moveTo(10f, 10f)
-            lineTo(10f, 22f)
+        path(fill = SolidColor(Color.White)) {
+            moveTo(6f, 4f); lineTo(6f, 28f); lineTo(10f, 28f); lineTo(10f, 18f)
+            lineTo(22f, 18f); lineTo(22f, 28f); lineTo(26f, 28f); lineTo(26f, 4f)
+            lineTo(22f, 4f); lineTo(22f, 14f); lineTo(10f, 14f); lineTo(10f, 4f)
+            close()
         }
     }.build()
 
@@ -102,237 +63,265 @@ val FacebookIcon: ImageVector
 fun LoginScreen(
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
+    isAuthReady: Boolean = true,
     errorMessage: String? = null,
-    onContinueClick: (String, String) -> Unit = { _, _ -> },
+    onContinueClick: () -> Unit = {},
     onGoogleLoginClick: () -> Unit = {}
 ) {
-    var emailOrPhone by remember { mutableStateOf("") }
-    var selectedCountryCode by remember { mutableStateOf("+84") }
-    var expandedCountryCode by remember { mutableStateOf(false) }
-
-    val isPhoneNumber = emailOrPhone.all { it.isDigit() || it == '+' || it == ' ' } && emailOrPhone.isNotBlank()
-
-    val countryCodes = listOf("+84" to "🇻🇳 VN", "+1" to "🇺🇸 US", "+44" to "🇬🇧 UK", "+81" to "🇯🇵 JP")
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(BgGray)
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.Start
+    Box(
+        modifier = modifier.fillMaxSize()
     ) {
-        Spacer(modifier = Modifier.height(100.dp))
-
-        Text(
-            text = "Xin chào bạn!",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = TitleBlue
+        // ── Background gradient ────────────────────────────────────────────
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.45f)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(HomeverBlueDark, HomeverBlue)
+                    )
+                )
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.55f)
+                .align(Alignment.BottomCenter)
+                .background(HomeverGray)
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Đăng nhập hoặc tạo tài khoản mới để tiếp tục",
-            fontSize = 14.sp,
-            color = TextGray
-        )
-
-        Spacer(modifier = Modifier.height(40.dp))
-
-        Text(
-            text = "Số điện thoại hoặc Email",
-            fontSize = 14.sp,
-            color = TextGray,
-            fontWeight = FontWeight.Medium
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        // ── Content ────────────────────────────────────────────────────────
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .systemBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (isPhoneNumber) {
-                Box {
-                    Row(
-                        modifier = Modifier
-                            .height(56.dp)
-                            .background(Color.White, RoundedCornerShape(12.dp))
-                            .border(1.dp, Color(0xFFE5E7EB), RoundedCornerShape(12.dp))
-                            .clickable { expandedCountryCode = true }
-                            .padding(horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(selectedCountryCode, fontSize = 14.sp, color = Color(0xFF1F2937), fontWeight = FontWeight.Medium)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(imageVector = GoogleIcon, contentDescription = null, modifier = Modifier.size(0.dp)) // Placeholder
-                        Text("▼", fontSize = 10.sp, color = Color.Gray)
-                    }
 
-                    DropdownMenu(
-                        expanded = expandedCountryCode,
-                        onDismissRequest = { expandedCountryCode = false }
-                    ) {
-                        countryCodes.forEach { (code, label) ->
-                            DropdownMenuItem(
-                                text = { Text("\$label (\$code)") },
-                                onClick = {
-                                    selectedCountryCode = code
-                                    expandedCountryCode = false
-                                }
+            // ── Hero section ───────────────────────────────────────────────
+            Spacer(Modifier.height(48.dp))
+
+            // Logo badge
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(20.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = HomeverLogoIcon,
+                    contentDescription = "Homever",
+                    tint = Color.White,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            Text(
+                text = "Homever",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White,
+                letterSpacing = (-0.5).sp
+            )
+
+            Spacer(Modifier.height(10.dp))
+
+            Text(
+                text = "Tìm bạn cùng phòng lý tưởng\nvà không gian sống như ở nhà.",
+                fontSize = 15.sp,
+                color = Color.White.copy(alpha = 0.85f),
+                textAlign = TextAlign.Center,
+                lineHeight = 22.sp,
+                modifier = Modifier.padding(horizontal = 32.dp)
+            )
+
+            Spacer(Modifier.height(44.dp))
+
+            // ── Card ──────────────────────────────────────────────────────
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    Text(
+                        text = "Chào mừng bạn 👋",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = HomeverBlueDark
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "Đăng nhập hoặc tạo tài khoản để bắt đầu",
+                        fontSize = 13.sp,
+                        color = HomeverTextGray,
+                        textAlign = TextAlign.Center
+                    )
+
+                    // ── Error banner ───────────────────────────────────────
+                    if (errorMessage != null) {
+                        Spacer(Modifier.height(16.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = HomeverRedLight,
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text(
+                                text = errorMessage,
+                                color = HomeverRed,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
                             )
                         }
                     }
+
+                    Spacer(Modifier.height(24.dp))
+
+                    // ── Primary CTA: Cognito Hosted UI (email / phone) ─────
+                    Button(
+                        onClick = onContinueClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = HomeverBlue,
+                            disabledContainerColor = HomeverBlue.copy(alpha = 0.5f)
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                        enabled = !isLoading && isAuthReady
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(22.dp),
+                                strokeWidth = 2.5.dp
+                            )
+                        } else if (!isAuthReady) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(22.dp),
+                                strokeWidth = 2.5.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Đăng nhập / Đăng ký",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    // ── Divider ────────────────────────────────────────────
+                    Spacer(Modifier.height(20.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        HorizontalDivider(
+                            modifier = Modifier.weight(1f),
+                            color = HomeverGrayBorder
+                        )
+                        Text(
+                            text = "  hoặc  ",
+                            fontSize = 12.sp,
+                            color = HomeverTextGray
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.weight(1f),
+                            color = HomeverGrayBorder
+                        )
+                    }
+                    Spacer(Modifier.height(20.dp))
+
+                    // ── Google Sign-In ─────────────────────────────────────
+                    OutlinedButton(
+                        onClick = onGoogleLoginClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        border = ButtonDefaults.outlinedButtonBorder,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White,
+                            contentColor = HomeverTextDark
+                        ),
+                        enabled = !isLoading && isAuthReady
+                    ) {
+                        Icon(
+                            imageVector = GoogleIcon,
+                            contentDescription = "Google",
+                            modifier = Modifier.size(20.dp),
+                            tint = Color.Unspecified
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = "Tiếp tục với Google",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    // ── Init hint ──────────────────────────────────────────
+                    if (!isAuthReady) {
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            text = "Đang kết nối tới máy chủ xác thực…",
+                            fontSize = 11.sp,
+                            color = HomeverTextGray,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
             }
 
-            OutlinedTextField(
-                value = emailOrPhone,
-                onValueChange = { emailOrPhone = it },
-                placeholder = {
-                    Text(
-                        text = "Nhập số điện thoại hoặc email của bạn...",
-                        color = Color(0xFFA0AAB0),
-                        fontSize = 14.sp
-                    )
-                },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color(0xFFE5E7EB),
-                    focusedBorderColor = BluePrimary,
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
-                ),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = if (isPhoneNumber) KeyboardType.Phone else KeyboardType.Email,
-                    imeAction = ImeAction.Done
-                )
-            )
-        }
+            Spacer(Modifier.height(32.dp))
 
-        if (errorMessage != null) {
-            Spacer(modifier = Modifier.height(8.dp))
+            // ── Footer ─────────────────────────────────────────────────────
             Text(
-                text = errorMessage,
-                color = Color.Red,
-                fontSize = 13.sp,
-                modifier = Modifier.fillMaxWidth()
+                text = "Bằng cách tiếp tục, bạn đồng ý với\nĐiều khoản dịch vụ và Chính sách bảo mật.",
+                fontSize = 11.sp,
+                color = HomeverTextGray,
+                textAlign = TextAlign.Center,
+                lineHeight = 16.sp,
+                modifier = Modifier.padding(horizontal = 32.dp)
             )
+
+            Spacer(Modifier.height(32.dp))
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = { onContinueClick(emailOrPhone, selectedCountryCode) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = BluePrimary),
-            shape = RoundedCornerShape(28.dp),
-            enabled = !isLoading && emailOrPhone.isNotBlank()
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-            } else {
-                Text(
-                    text = "Tiếp tục",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(48.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE5E7EB))
-            Text(
-                text = "Hoặc kết nối qua",
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = TextGray,
-                fontSize = 12.sp
-            )
-            HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE5E7EB))
-        }
-
-        Spacer(modifier = Modifier.height(48.dp))
-
-        OutlinedButton(
-            onClick = onGoogleLoginClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp),
-            shape = RoundedCornerShape(28.dp),
-            border = BorderStroke(1.dp, Color(0xFFE5E7EB)),
-            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
-        ) {
-            Icon(
-                imageVector = GoogleIcon,
-                contentDescription = "Google",
-                modifier = Modifier.size(20.dp),
-                tint = BluePrimary
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Tiếp tục với Google",
-                color = Color(0xFF1F2937),
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedButton(
-            onClick = onGoogleLoginClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp),
-            shape = RoundedCornerShape(28.dp),
-            border = BorderStroke(1.dp, Color(0xFFE5E7EB)),
-            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
-        ) {
-            Icon(
-                imageVector = FacebookIcon,
-                contentDescription = "Facebook",
-                modifier = Modifier.size(20.dp),
-                tint = BluePrimary
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Tiếp tục với Facebook",
-                color = Color(0xFF1F2937),
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Text(
-            text = "Bằng cách tiếp tục, bạn đồng ý với Điều khoản dịch vụ.",
-            fontSize = 12.sp,
-            color = TextGray,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(48.dp))
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun LoginScreenPreview() {
+    com.example.homever.ui.theme.HomEverTheme {
+        LoginScreen()
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun LoginScreenPreview() {
-    HomEverTheme {
-        LoginScreen()
+fun LoginScreenLoadingPreview() {
+    com.example.homever.ui.theme.HomEverTheme {
+        LoginScreen(isLoading = true)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LoginScreenNotReadyPreview() {
+    com.example.homever.ui.theme.HomEverTheme {
+        LoginScreen(isAuthReady = false)
     }
 }

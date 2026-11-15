@@ -1,112 +1,210 @@
 package com.example.homever.viewmodel
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.homever.data.network.UserProfile
 import com.example.homever.domain.repository.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 enum class ProfileStatus {
-    IDLE, LOADING, SUCCESS, ERROR
+    IDLE, LOADING, SUCCESS, ERROR, UNAUTHORIZED
 }
 
+/**
+ * Holds all onboarding state as [StateFlow] so it survives recomposition and is observable
+ * from any composable. Temporary data is stored here during the multi-step onboarding flow
+ * and only submitted to the backend at the final confirmation step.
+ */
 class ProfileViewModel(
     private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
+    // ── Status / Error ─────────────────────────────────────────────────────
     private val _status = MutableStateFlow(ProfileStatus.IDLE)
-    val status = _status.asStateFlow()
+    val status: StateFlow<ProfileStatus> = _status.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage = _errorMessage.asStateFlow()
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    // ── Avatar (optional — S3 upload deferred) ─────────────────────────────
     private val _avatarUri = MutableStateFlow<Uri?>(null)
-    val avatarUri = _avatarUri.asStateFlow()
+    val avatarUri: StateFlow<Uri?> = _avatarUri.asStateFlow()
+
+    // ── Onboarding temp data (StateFlow so recomposition doesn't lose values) ──
+    private val _tempDisplayName = MutableStateFlow("")
+    val tempDisplayName: StateFlow<String> = _tempDisplayName.asStateFlow()
+
+    private val _tempGender = MutableStateFlow("")
+    val tempGender: StateFlow<String> = _tempGender.asStateFlow()
+
+    private val _tempAge = MutableStateFlow("")
+    val tempAge: StateFlow<String> = _tempAge.asStateFlow()
+
+    private val _tempOccupation = MutableStateFlow("")
+    val tempOccupation: StateFlow<String> = _tempOccupation.asStateFlow()
+
+    private val _tempNeedType = MutableStateFlow("roommate")
+    val tempNeedType: StateFlow<String> = _tempNeedType.asStateFlow()
+
+    private val _tempLifestyle = MutableStateFlow("")
+    val tempLifestyle: StateFlow<String> = _tempLifestyle.asStateFlow()
+
+    private val _tempBudget = MutableStateFlow("")
+    val tempBudget: StateFlow<String> = _tempBudget.asStateFlow()
+
+    private val _tempLocation = MutableStateFlow("")
+    val tempLocation: StateFlow<String> = _tempLocation.asStateFlow()
+
+    private val _tempBio = MutableStateFlow("")
+    val tempBio: StateFlow<String> = _tempBio.asStateFlow()
+
+    // Guard against duplicate submission
+    private var isSubmitting = false
+
+    // ── Setters ───────────────────────────────────────────────────────────
+    fun saveBasicProfileLocally(displayName: String, gender: String, age: String, occupation: String) {
+        _tempDisplayName.value = displayName
+        _tempGender.value = gender
+        _tempAge.value = age
+        _tempOccupation.value = occupation
+    }
+
+    fun saveNeedLocally(needType: String) {
+        _tempNeedType.value = needType
+    }
+
+    fun saveLifestyleLocally(lifestyle: String) {
+        _tempLifestyle.value = lifestyle
+    }
+
+    fun saveBudgetAndLocationLocally(budget: String, location: String) {
+        _tempBudget.value = budget
+        _tempLocation.value = location
+    }
+
+    fun saveBioLocally(bio: String) {
+        _tempBio.value = bio
+    }
 
     fun updateAvatarUri(uri: Uri?) {
         _avatarUri.value = uri
     }
 
-    fun checkProfileExists(onResult: (Boolean) -> Unit) {
+    fun clearError() {
+        _errorMessage.value = null
+        if (_status.value == ProfileStatus.ERROR) {
+            _status.value = ProfileStatus.IDLE
+        }
+    }
+
+    // ── Profile existence check ────────────────────────────────────────────
+    /**
+     * Calls GET /v1/users/me to determine whether a Homever profile exists for the current user.
+     *
+     * - HTTP 200 with a non-blank displayName → profile found → [onResult](true, false)
+     * - HTTP 404 / PROFILE_NOT_FOUND → no profile → [onResult](false, false)
+     * - HTTP 401 → token genuinely invalid → [onResult](null, true)
+     * - Network / server error → [onResult](null, false) — do NOT clear session
+     */
+    fun checkProfileExists(onResult: (exists: Boolean?, isUnauthorized: Boolean) -> Unit) {
         viewModelScope.launch {
             val result = profileRepository.getMyProfile()
             result.fold(
                 onSuccess = { profile ->
-                    // Assuming empty displayName means incomplete
+                    // A profile is considered "existing" only when displayName has been set.
                     if (profile.displayName.isNotBlank()) {
-                        onResult(true)
+                        onResult(true, false)
                     } else {
-                        onResult(false)
+                        onResult(false, false)
                     }
                 },
-                onFailure = {
-                    onResult(false)
+                onFailure = { error ->
+                    when (error.message) {
+                        "PROFILE_NOT_FOUND" -> onResult(false, false)
+                        "UNAUTHORIZED" -> {
+                            _status.value = ProfileStatus.UNAUTHORIZED
+                            _errorMessage.value = "Phiên đăng nhập đã hết hạn"
+                            onResult(null, true)
+                        }
+                        else -> {
+                            // Network / server error — preserve session, let caller decide.
+                            Log.e("ProfileViewModel", "checkProfileExists failed: ${error.message}", error)
+                            _errorMessage.value = "Lỗi kết nối máy chủ khi kiểm tra hồ sơ: ${error.message}"
+                            onResult(null, false)
+                        }
+                    }
                 }
             )
         }
     }
 
-    fun completeProfile(displayName: String, gender: String, age: String, occupation: String, onSuccess: () -> Unit) {
-        if (displayName.isBlank() || gender.isBlank() || age.isBlank() || occupation.isBlank()) {
+    // ── Profile submission ─────────────────────────────────────────────────
+    fun completeProfile(onSuccess: () -> Unit) {
+        if (isSubmitting) return
+        if (_tempDisplayName.value.isBlank() || _tempGender.value.isBlank() ||
+            _tempAge.value.isBlank() || _tempOccupation.value.isBlank()
+        ) {
             _errorMessage.value = "Vui lòng điền đầy đủ thông tin"
             _status.value = ProfileStatus.ERROR
             return
         }
 
-        val ageInt = age.toIntOrNull()
+        val ageInt = _tempAge.value.toIntOrNull()
         if (ageInt == null || ageInt < 16 || ageInt > 100) {
-            _errorMessage.value = "Tuổi không hợp lệ"
+            _errorMessage.value = "Tuổi không hợp lệ (16–100)"
             _status.value = ProfileStatus.ERROR
             return
         }
 
+        isSubmitting = true
         _status.value = ProfileStatus.LOADING
         _errorMessage.value = null
 
         viewModelScope.launch {
             try {
-                var avatarUrl: String? = null
-                val uri = _avatarUri.value
-                
-                // 1. Upload Avatar if selected
-                if (uri != null) {
-                    val uploadResult = profileRepository.uploadAvatar(uri, "image/jpeg") // simplification
-                    uploadResult.fold(
-                        onSuccess = { urlOrKey -> avatarUrl = urlOrKey },
-                        onFailure = { 
-                            _errorMessage.value = "Tải ảnh thất bại: \${it.localizedMessage}"
-                            _status.value = ProfileStatus.ERROR
-                            return@launch
-                        }
-                    )
-                }
-
-                // 2. Save Profile
                 val profile = UserProfile(
-                    displayName = displayName,
-                    gender = gender,
+                    displayName = _tempDisplayName.value,
+                    gender = _tempGender.value,
                     age = ageInt,
-                    occupation = occupation,
-                    avatarUrl = avatarUrl
+                    occupation = _tempOccupation.value,
+                    avatarUrl = null, // S3 upload deferred — avatar is optional
+                    needType = _tempNeedType.value,
+                    lifestyle = _tempLifestyle.value,
+                    budget = _tempBudget.value,
+                    location = _tempLocation.value,
+                    bio = _tempBio.value
                 )
-                
+
                 val updateResult = profileRepository.updateMyProfile(profile)
-                
+
                 updateResult.fold(
                     onSuccess = {
                         _status.value = ProfileStatus.SUCCESS
+                        isSubmitting = false
                         onSuccess()
                     },
-                    onFailure = {
-                        _errorMessage.value = "Lưu hồ sơ thất bại: \${it.localizedMessage}"
-                        _status.value = ProfileStatus.ERROR
+                    onFailure = { error ->
+                        isSubmitting = false
+                        when (error.message) {
+                            "UNAUTHORIZED" -> {
+                                _status.value = ProfileStatus.UNAUTHORIZED
+                                _errorMessage.value = "Phiên đăng nhập đã hết hạn"
+                            }
+                            else -> {
+                                _errorMessage.value = "Lưu hồ sơ thất bại: ${error.localizedMessage}"
+                                _status.value = ProfileStatus.ERROR
+                            }
+                        }
                     }
                 )
-
             } catch (e: Exception) {
+                isSubmitting = false
                 _errorMessage.value = "Đã xảy ra lỗi hệ thống."
                 _status.value = ProfileStatus.ERROR
             }

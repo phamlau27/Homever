@@ -1,11 +1,12 @@
 package com.example.homever.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -18,9 +19,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.homever.ui.theme.HomEverTheme
+import com.example.homever.ui.theme.*
 
-val CustomBluePrimary = Color(0xFF2962FF)
 private val OrangePrimary = Color(0xFFF97316)
 
 private val UndoIcon: ImageVector
@@ -72,18 +72,111 @@ val DiscoverPersonIcon: ImageVector
         }
     }.build()
 
+data class RoommateCandidate(
+    val name: String,
+    val age: Int,
+    val occupation: String,
+    val location: String,
+    val budget: String,
+    val tags: List<String>,
+    val bio: String,
+    val gradientColors: List<Color>
+)
+
+val sampleCandidates = listOf(
+    RoommateCandidate(
+        name = "Trần Thu Hà",
+        age = 22,
+        occupation = "Sinh viên ĐH Ngoại Thương",
+        location = "Thủ Đức, TP.HCM",
+        budget = "3 - 4 triệu/tháng",
+        tags = listOf("Cú đêm", "Gọn gàng", "Không hút thuốc"),
+        bio = "Thích không gian yên tĩnh học tập, nấu ăn cuối tuần.",
+        gradientColors = listOf(Color(0xFF3B82F6), Color(0xFF1E3A8A))
+    ),
+    RoommateCandidate(
+        name = "Nguyễn Hoàng Nam",
+        age = 24,
+        occupation = "Software Engineer",
+        location = "Quận 1, TP.HCM",
+        budget = "4 - 6 triệu/tháng",
+        tags = listOf("Dậy sớm", "Rất sạch sẽ", "Yêu động vật"),
+        bio = "Làm việc hybrid, hòa đồng, ngăn nắp và tôn trọng riêng tư.",
+        gradientColors = listOf(Color(0xFF10B981), Color(0xFF065F46))
+    ),
+    RoommateCandidate(
+        name = "Lê Thảo My",
+        age = 21,
+        occupation = "Sinh viên ĐH Bách Khoa",
+        location = "Quận 10, TP.HCM",
+        budget = "2.5 - 3.5 triệu/tháng",
+        tags = listOf("Thích yên tĩnh", "Sống ngăn nắp", "Thích nấu ăn"),
+        bio = "Mong tìm bạn cùng phòng vui vẻ, tử tế để ở lâu dài.",
+        gradientColors = listOf(Color(0xFF8B5CF6), Color(0xFF4C1D95))
+    ),
+    RoommateCandidate(
+        name = "Phạm Quốc Bảo",
+        age = 25,
+        occupation = "Graphic Designer",
+        location = "Bình Thạnh, TP.HCM",
+        budget = "3.5 - 5 triệu/tháng",
+        tags = listOf("Linh hoạt", "Cởi mở", "Thích âm nhạc"),
+        bio = "Hay vẽ tranh và nghe nhạc nhẹ nhàng, gọn gàng văn minh.",
+        gradientColors = listOf(Color(0xFFF59E0B), Color(0xFF92400E))
+    )
+)
+
 @Composable
-fun DiscoverScreen(modifier: Modifier = Modifier) {
+fun DiscoverScreen(
+    modifier: Modifier = Modifier,
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToRoom: () -> Unit = {},
+    onNavigateToMessages: () -> Unit = {}
+) {
+    var currentIndex by remember { mutableStateOf(0) }
+    val candidate = sampleCandidates[currentIndex]
+
     Scaffold(
-        bottomBar = { AppBottomNavigation("discover") }
+        bottomBar = {
+            AppBottomNavigation(
+                selectedItem = "discover",
+                onDiscoverClick = {},
+                onRoomClick = onNavigateToRoom,
+                onMessagesClick = onNavigateToMessages,
+                onProfileClick = onNavigateToProfile
+            )
+        }
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            // Placeholder for User Image
+            // Background Visual for Roommate Candidate
             Box(
-                modifier = Modifier.fillMaxSize().background(Color(0xFFE5E7EB)),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(candidate.gradientColors)),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Ảnh người dùng", color = Color(0xFFA0AAB0), fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .background(Color.White.copy(alpha = 0.2f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = DiscoverPersonIcon,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(60.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = candidate.name,
+                        color = Color.White,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
             
             // Top Logo
@@ -91,7 +184,7 @@ fun DiscoverScreen(modifier: Modifier = Modifier) {
                 text = "Homever",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = CustomBluePrimary,
+                color = Color.White,
                 modifier = Modifier.padding(24.dp).align(Alignment.TopStart)
             )
             
@@ -99,37 +192,76 @@ fun DiscoverScreen(modifier: Modifier = Modifier) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(400.dp)
+                    .height(420.dp)
                     .align(Alignment.BottomCenter)
-                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))))
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))))
                     .padding(horizontal = 24.dp, vertical = 24.dp)
             ) {
                 Column(modifier = Modifier.align(Alignment.BottomStart)) {
-                    Text("Trần Thu Hà, 22", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("${candidate.name}, ${candidate.age}", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text("Sinh viên ĐH Ngoại Thương", fontSize = 14.sp, color = Color.White)
+                    Text(candidate.occupation, fontSize = 14.sp, color = Color.White.copy(alpha = 0.9f))
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text("Thủ Đức • 3 - 4 triệu/tháng", fontSize = 14.sp, color = Color.White)
+                    Text("${candidate.location} • ${candidate.budget}", fontSize = 14.sp, color = Color.White.copy(alpha = 0.9f))
                     
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(candidate.bio, fontSize = 12.sp, color = Color.White.copy(alpha = 0.75f), maxLines = 2)
+
                     Spacer(modifier = Modifier.height(12.dp))
                     
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TagPill("Cú đêm")
-                        TagPill("Gọn gàng")
-                        TagPill("Không hút thuốc")
+                        candidate.tags.forEach { tag ->
+                            TagPill(tag)
+                        }
                     }
                     
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
                     
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        ActionButton(icon = UndoIcon, size = 48.dp, iconColor = Color.Black, bgColor = Color.White, label = "Quay lại")
-                        ActionButton(icon = CloseIcon, size = 64.dp, iconColor = Color.Black, bgColor = Color.White, label = "Bỏ qua")
-                        ActionButton(icon = HeartIcon, size = 64.dp, iconColor = Color.White, bgColor = OrangePrimary, label = "Quan tâm")
-                        ActionButton(icon = ChatIcon, size = 48.dp, iconColor = Color.White, bgColor = CustomBluePrimary, label = "Nhắn tin")
+                        ActionButton(
+                            icon = UndoIcon,
+                            size = 48.dp,
+                            iconColor = Color.Black,
+                            bgColor = Color.White,
+                            label = "Quay lại",
+                            onClick = {
+                                currentIndex = (currentIndex - 1 + sampleCandidates.size) % sampleCandidates.size
+                            }
+                        )
+                        ActionButton(
+                            icon = CloseIcon,
+                            size = 64.dp,
+                            iconColor = Color.Black,
+                            bgColor = Color.White,
+                            label = "Bỏ qua",
+                            onClick = {
+                                currentIndex = (currentIndex + 1) % sampleCandidates.size
+                            }
+                        )
+                        ActionButton(
+                            icon = HeartIcon,
+                            size = 64.dp,
+                            iconColor = Color.White,
+                            bgColor = OrangePrimary,
+                            label = "Quan tâm",
+                            onClick = {
+                                currentIndex = (currentIndex + 1) % sampleCandidates.size
+                            }
+                        )
+                        ActionButton(
+                            icon = ChatIcon,
+                            size = 48.dp,
+                            iconColor = Color.White,
+                            bgColor = BluePrimary,
+                            label = "Nhắn tin",
+                            onClick = {
+                                onNavigateToMessages()
+                            }
+                        )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -150,8 +282,18 @@ fun TagPill(text: String) {
 }
 
 @Composable
-fun ActionButton(icon: ImageVector, size: Dp, iconColor: Color, bgColor: Color, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+fun ActionButton(
+    icon: ImageVector,
+    size: Dp,
+    iconColor: Color,
+    bgColor: Color,
+    label: String,
+    onClick: () -> Unit = {}
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable { onClick() }
+    ) {
         Box(
             modifier = Modifier
                 .size(size)
@@ -166,42 +308,79 @@ fun ActionButton(icon: ImageVector, size: Dp, iconColor: Color, bgColor: Color, 
 }
 
 @Composable
-fun AppBottomNavigation(selectedItem: String) {
+fun AppBottomNavigation(
+    selectedItem: String,
+    onDiscoverClick: () -> Unit = {},
+    onRoomClick: () -> Unit = {},
+    onInvitesClick: () -> Unit = {},
+    onMessagesClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {}
+) {
     NavigationBar(containerColor = Color.White, tonalElevation = 8.dp) {
         NavigationBarItem(
             icon = { Icon(FlameIcon, contentDescription = null, modifier = Modifier.size(24.dp)) },
             label = { Text("Khám phá", fontSize = 10.sp) },
             selected = selectedItem == "discover",
-            onClick = {},
-            colors = NavigationBarItemDefaults.colors(selectedIconColor = CustomBluePrimary, selectedTextColor = CustomBluePrimary, unselectedIconColor = Color.Gray, unselectedTextColor = Color.Gray, indicatorColor = Color.White)
+            onClick = onDiscoverClick,
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = BluePrimary,
+                selectedTextColor = BluePrimary,
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray,
+                indicatorColor = Color.White
+            )
         )
         NavigationBarItem(
             icon = { Icon(DiscoverHomeIcon, contentDescription = null, modifier = Modifier.size(24.dp)) },
             label = { Text("Phòng", fontSize = 10.sp) },
             selected = selectedItem == "room",
-            onClick = {},
-            colors = NavigationBarItemDefaults.colors(selectedIconColor = CustomBluePrimary, selectedTextColor = CustomBluePrimary, unselectedIconColor = Color.Gray, unselectedTextColor = Color.Gray, indicatorColor = Color.White)
+            onClick = onRoomClick,
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = BluePrimary,
+                selectedTextColor = BluePrimary,
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray,
+                indicatorColor = Color.White
+            )
         )
         NavigationBarItem(
             icon = { Icon(HeartIcon, contentDescription = null, modifier = Modifier.size(24.dp)) },
             label = { Text("Quan tâm", fontSize = 10.sp) },
             selected = selectedItem == "invites",
-            onClick = {},
-            colors = NavigationBarItemDefaults.colors(selectedIconColor = CustomBluePrimary, selectedTextColor = CustomBluePrimary, unselectedIconColor = Color.Gray, unselectedTextColor = Color.Gray, indicatorColor = Color.White)
+            onClick = onInvitesClick,
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = BluePrimary,
+                selectedTextColor = BluePrimary,
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray,
+                indicatorColor = Color.White
+            )
         )
         NavigationBarItem(
             icon = { Icon(ChatIcon, contentDescription = null, modifier = Modifier.size(24.dp)) },
             label = { Text("Tin nhắn", fontSize = 10.sp) },
             selected = selectedItem == "messages",
-            onClick = {},
-            colors = NavigationBarItemDefaults.colors(selectedIconColor = CustomBluePrimary, selectedTextColor = CustomBluePrimary, unselectedIconColor = Color.Gray, unselectedTextColor = Color.Gray, indicatorColor = Color.White)
+            onClick = onMessagesClick,
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = BluePrimary,
+                selectedTextColor = BluePrimary,
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray,
+                indicatorColor = Color.White
+            )
         )
         NavigationBarItem(
             icon = { Icon(DiscoverPersonIcon, contentDescription = null, modifier = Modifier.size(24.dp)) },
             label = { Text("Hồ sơ", fontSize = 10.sp) },
             selected = selectedItem == "profile",
-            onClick = {},
-            colors = NavigationBarItemDefaults.colors(selectedIconColor = CustomBluePrimary, selectedTextColor = CustomBluePrimary, unselectedIconColor = Color.Gray, unselectedTextColor = Color.Gray, indicatorColor = Color.White)
+            onClick = onProfileClick,
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = BluePrimary,
+                selectedTextColor = BluePrimary,
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray,
+                indicatorColor = Color.White
+            )
         )
     }
 }

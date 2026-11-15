@@ -13,6 +13,11 @@ data class UserProfile(
     val age: Int = 0,
     val occupation: String = "",
     val avatarUrl: String? = null,
+    val needType: String? = null,
+    val lifestyle: String? = null,
+    val budget: String? = null,
+    val location: String? = null,
+    val traits: String? = null,
     val bio: String? = null
 )
 
@@ -30,7 +35,7 @@ interface HomeverApi {
     @GET("users/me")
     suspend fun getMyProfile(): Response<UserProfile>
 
-    @PUT("users/me")
+    @POST("users/me")
     suspend fun updateMyProfile(@Body profile: UserProfile): Response<UserProfile>
 
     @POST("users/me/avatar/presigned-url")
