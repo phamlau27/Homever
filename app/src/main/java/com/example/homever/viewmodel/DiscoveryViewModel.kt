@@ -7,6 +7,9 @@ import com.example.homever.data.network.CandidateResponse
 import com.example.homever.data.network.HomeverApi
 import com.example.homever.data.network.InterestRequest
 import com.example.homever.data.network.InterestsResponse
+import com.example.homever.data.network.MatchingProfileError
+import com.google.gson.Gson
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +23,7 @@ data class DiscoveryUiState(
     val cardPage: Int = 0,
     val isLoading: Boolean = false,
     val candidatesLoaded: Boolean = false,
+    val profileIncomplete: Boolean = false,
     val errorMessage: String? = null,
     val interests: InterestsResponse = InterestsResponse(),
     val interestsLoading: Boolean = false,
@@ -32,12 +36,35 @@ class DiscoveryViewModel(private val api: HomeverApi) : ViewModel() {
     private val mutableState = MutableStateFlow(DiscoveryUiState())
     val state = mutableState.asStateFlow()
 
+    private var candidatesJob: Job? = null
+
+    fun invalidateCandidates() {
+        candidatesJob?.cancel()
+        mutableState.update {
+            it.copy(candidates = emptyList(), currentIndex = 0, cardPage = 0,
+                isLoading = false, candidatesLoaded = false, profileIncomplete = false, errorMessage = null)
+        }
+    }
+
     fun loadCandidates(force: Boolean = false) {
         if (mutableState.value.isLoading || (!force && mutableState.value.candidatesLoaded)) return
-        mutableState.update { it.copy(isLoading = true, errorMessage = null) }
-        viewModelScope.launch {
+        mutableState.update { it.copy(isLoading = true, errorMessage = null, profileIncomplete = false) }
+        candidatesJob = viewModelScope.launch {
             try {
                 val response = api.getMatchingCandidates(limit = 100)
+                if (response.code() == 422) {
+                    val detail = runCatching {
+                        Gson().fromJson(response.errorBody()?.string(), MatchingProfileError::class.java)
+                    }.getOrNull()
+                    if (detail?.code == "MATCHING_PROFILE_INCOMPLETE") {
+                        mutableState.update {
+                            it.copy(candidates = emptyList(), currentIndex = 0, cardPage = 0,
+                                isLoading = false, candidatesLoaded = true, profileIncomplete = true,
+                                errorMessage = "Hãy hoàn tất lựa chọn tìm bạn cùng phòng để nhận gợi ý phù hợp.")
+                        }
+                        return@launch
+                    }
+                }
                 if (!response.isSuccessful) error("HTTP ${response.code()}")
                 val profiles = response.body().orEmpty().distinctBy { it.profile.id }
                 mutableState.update { current ->

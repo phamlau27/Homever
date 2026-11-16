@@ -57,7 +57,7 @@ object NetworkModule {
         val retrofit = Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(HomeverJson.gson))
             .build()
 
         return retrofit.create(HomeverApi::class.java).also { _api = it }

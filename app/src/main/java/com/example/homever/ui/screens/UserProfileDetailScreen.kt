@@ -36,11 +36,13 @@ fun UserProfileDetailScreen(
     onReportUser: (() -> Unit)? = null,
     isOwnPreview: Boolean = false,
     initialPage: Int = 0,
-    photos: List<String> = emptyList()
+    photos: List<String> = emptyList(),
+    gender: String = ""
 ) {
     var page by rememberSaveable(name, age, avatarUrl, isOwnPreview) { mutableIntStateOf(initialPage) }
     val candidate = UserProfile(
         displayName = name,
+        gender = gender,
         age = age,
         occupation = occupation,
         location = location,
@@ -51,7 +53,7 @@ fun UserProfileDetailScreen(
         avatarUrl = avatarUrl
     ).asRoommateCandidate(matchPercentage).let { profile ->
         profile.copy(
-            tags = (profile.tags + LifestyleCriteria.labels(tags.joinToString(";"))).distinct(),
+            tags = (profile.tags + LifestyleCriteria.publicLabels(tags.joinToString(";"))).distinct(),
             photos = photos
         )
     }

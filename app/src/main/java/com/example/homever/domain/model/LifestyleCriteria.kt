@@ -100,6 +100,18 @@ object LifestyleCriteria {
             criteria.any { optionLabel(it, label) != null } || criterionForTitle(label.substringBefore(':')) != null
         }
 
+    private fun isGenderPreferenceLabel(label: String): Boolean =
+        optionLabel(criteria.first(), label) != null ||
+            criterionForTitle(label.substringBefore(':')) == criteria.first()
+
+    fun publicLabels(value: String?): List<String> =
+        labels(value).filterNot(::isGenderPreferenceLabel)
+
+    fun profileLabels(value: String?, gender: String?): List<String> = buildList {
+        gender?.trim()?.takeIf(String::isNotBlank)?.let { add(it) }
+        addAll(criterionLabels(value).filterNot(::isGenderPreferenceLabel))
+    }
+
     fun isCriteriaText(value: String): Boolean {
         val tokens = value.substringBefore(NOTE_SEPARATOR).split(";", ",").map(String::trim).filter(String::isNotBlank)
         return tokens.isNotEmpty() && tokens.all { token ->
@@ -129,7 +141,7 @@ object LifestyleCriteria {
 
     fun displayText(value: String?): String {
         val content = value.orEmpty()
-        val formattedChoices = labels(content).joinToString(", ")
+        val formattedChoices = publicLabels(content).joinToString(", ")
         return if (NOTE_SEPARATOR in content) {
             listOf(formattedChoices, note(content)).filter(String::isNotBlank).joinToString("\n\n")
         } else {

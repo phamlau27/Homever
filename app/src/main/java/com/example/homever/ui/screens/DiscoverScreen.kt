@@ -87,7 +87,8 @@ data class RoommateCandidate(
     val traits: String? = null,
     val needType: String? = null,
     val photos: List<String> = emptyList(),
-    val id: String = ""
+    val id: String = "",
+    val gender: String = ""
 )
 
 // Sample candidates with realistic high-quality photos (2 photos each)
@@ -150,6 +151,7 @@ fun DiscoverScreen(
     modifier: Modifier = Modifier,
     state: DiscoveryUiState = DiscoveryUiState(),
     onRefresh: () -> Unit = {},
+    onCompleteMatching: () -> Unit = {},
     onPrevious: () -> Unit = {},
     onSkip: () -> Unit = {},
     onInterest: (String) -> Unit = {},
@@ -190,9 +192,18 @@ fun DiscoverScreen(
                 if (isLoading) {
                     CircularProgressIndicator()
                 } else {
-                    Text(state.errorMessage ?: "Bạn đã xem hết hồ sơ hiện có.")
+                    Text(state.errorMessage ?: if (candidates.isEmpty()) {
+                        "Chưa có hồ sơ đáp ứng lựa chọn giới tính, khu vực và ngân sách của bạn."
+                    } else {
+                        "Bạn đã xem hết hồ sơ phù hợp hiện có."
+                    })
                     Spacer(Modifier.height(16.dp))
-                    Button(onClick = onRefresh) { Text("Tải lại") }
+                    if (state.profileIncomplete) {
+                        Button(onClick = onCompleteMatching) { Text("Hoàn tất lựa chọn") }
+                    } else {
+                        Button(onClick = onRefresh) { Text("Tải lại") }
+                        TextButton(onClick = onCompleteMatching) { Text("Điều chỉnh lựa chọn tìm kiếm") }
+                    }
                     if (currentIndex > 0) {
                         TextButton(onClick = onPrevious) { Text("Xem thẻ trước") }
                     }

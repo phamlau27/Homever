@@ -1,5 +1,7 @@
 package com.example.homever.data.network
 
+import com.example.homever.domain.model.MatchingPreferences
+
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -35,7 +37,14 @@ data class UserProfile(
     val budget: String? = null,
     val location: String? = null,
     val traits: String? = null,
-    val bio: String? = null
+    val bio: String? = null,
+    val matchingPreferences: MatchingPreferences? = null
+)
+
+data class MatchingProfileError(
+    val code: String = "",
+    val message: String = "",
+    val missingFields: List<String> = emptyList()
 )
 
 data class UploadImageResponse(

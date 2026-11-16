@@ -2,6 +2,7 @@ package com.example.homever.viewmodel
 
 import android.net.Uri
 import com.example.homever.domain.model.LifestyleCriteria
+import com.example.homever.domain.model.MatchingPreferenceCatalog
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -92,7 +93,7 @@ class ProfileViewModel(
     }
 
     fun saveLifestyleLocally(lifestyle: String) {
-        _tempLifestyle.value = lifestyle
+        _tempLifestyle.value = LifestyleCriteria.withNote(lifestyle, LifestyleCriteria.note(_tempLifestyle.value))
     }
 
     fun saveBudgetAndLocationLocally(budget: String, location: String) {
@@ -206,9 +207,12 @@ class ProfileViewModel(
         _tempAge.value = if (profile.age > 0) profile.age.toString() else ""
         _tempOccupation.value = profile.occupation
         _tempNeedType.value = profile.needType ?: "roommate"
-        _tempLifestyle.value = profile.lifestyle ?: ""
-        _tempBudget.value = profile.budget ?: ""
-        _tempLocation.value = profile.location ?: ""
+        val preferences = profile.matchingPreferences
+        _tempLifestyle.value = preferences?.let {
+            LifestyleCriteria.withNote(MatchingPreferenceCatalog.lifestyleDisplay(it), LifestyleCriteria.note(profile.lifestyle))
+        } ?: profile.lifestyle.orEmpty()
+        _tempBudget.value = preferences?.let(MatchingPreferenceCatalog::budgetDisplay) ?: profile.budget.orEmpty()
+        _tempLocation.value = preferences?.let { MatchingPreferenceCatalog.locationDisplay(it.districtIds) } ?: profile.location.orEmpty()
         _tempBio.value = profile.bio ?: ""
         _tempTraits.value = profile.traits ?: ""
         if (!profile.avatarUrl.isNullOrBlank()) {
@@ -346,6 +350,17 @@ class ProfileViewModel(
             return
         }
 
+        val matchingPreferences = MatchingPreferenceCatalog.build(
+            lifestyle = _tempLifestyle.value,
+            budget = _tempBudget.value,
+            location = _tempLocation.value
+        )
+        if (matchingPreferences == null) {
+            _errorMessage.value = "Vui lòng hoàn tất câu hỏi lối sống, ngân sách và khu vực tìm kiếm."
+            _status.value = ProfileStatus.ERROR
+            return
+        }
+
         isSubmitting = true
         _status.value = ProfileStatus.LOADING
         _errorMessage.value = null
@@ -381,7 +396,8 @@ class ProfileViewModel(
                     budget = _tempBudget.value,
                     location = _tempLocation.value,
                     bio = _tempBio.value,
-                    traits = _tempTraits.value
+                    traits = _tempTraits.value,
+                    matchingPreferences = matchingPreferences
                 )
 
                 val updateResult = profileRepository.updateMyProfile(profile)

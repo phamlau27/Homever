@@ -1,10 +1,43 @@
 /**
- * Hằng số & Bảng tra cứu cho Giai đoạn 1 thuật toán Matching AISC
- * Theo báo cáo "PHƯƠNG PHÁP ĐỀ XUẤT CHO HỆ THỐNG MATCHING AISC"
+ * Cấu hình matching semantic-v1.
+ *
+ * W^(0) lấy từ khảo sát HOMEVER (Bảng 3). Ma trận khách đến phòng giữ
+ * nguyên Bảng 2; các ma trận còn lại là tham số ngữ nghĩa thiết kế v1,
+ * chưa phải ước lượng thực nghiệm từ dữ liệu khảo sát.
  */
+export const MATCHING_VERSION = 'semantic-v1';
 
-// 1. Vector trọng số ban đầu W^(0) từ khảo sát HOMEVER (Mục 2.4 - Bảng 3)
-export const INITIAL_WEIGHTS: Record<string, number> = {
+export const CRITERIA_KEYS = [
+  'schedule',
+  'noise',
+  'cleanliness',
+  'smoking',
+  'pets',
+  'guests',
+  'privacy',
+  'cooking',
+  'responsibility',
+  'costSharing',
+] as const;
+
+export type CriterionKey = (typeof CRITERIA_KEYS)[number];
+
+/** Mã đáp án ổn định, tách khỏi nhãn tiếng Việt hiển thị trên Android. */
+export const ANSWER_OPTIONS: Readonly<Record<CriterionKey, readonly string[]>> = {
+  schedule: ['EARLY', 'NORMAL', 'NIGHT', 'FLEXIBLE'],
+  noise: ['VERY_QUIET', 'QUIET', 'NORMAL', 'NOISE_OK'],
+  cleanliness: ['VERY_TIDY', 'TIDY', 'NORMAL', 'RELAXED'],
+  smoking: ['NEVER', 'SOMETIMES', 'OFTEN'],
+  pets: ['LOVE', 'ACCEPT', 'INDIFFERENT', 'NO_PETS'],
+  guests: ['RARE', 'SOMETIMES', 'WEEKENDS', 'OFTEN'],
+  privacy: ['HIGH', 'BALANCED', 'COMMUNAL'],
+  cooking: ['OFTEN', 'SOMETIMES', 'TAKEOUT', 'NEVER'],
+  responsibility: ['PROACTIVE', 'ASSIGNED', 'FLEXIBLE', 'NORMAL'],
+  costSharing: ['EQUAL', 'USAGE', 'SEPARATE', 'FLEXIBLE'],
+};
+
+/** Giá trị công bố nguyên bản; tổng bằng 99,99% do làm tròn khảo sát. */
+export const PUBLISHED_WEIGHTS: Readonly<Record<CriterionKey, number>> = {
   responsibility: 0.1075, // Trách nhiệm việc chung: 10.75%
   privacy: 0.1069,        // Quyền riêng tư: 10.69%
   smoking: 0.1050,        // Hút thuốc: 10.50%
@@ -14,94 +47,111 @@ export const INITIAL_WEIGHTS: Record<string, number> = {
   cooking: 0.1000,        // Nấu ăn: 10.00%
   noise: 0.0960,          // Tiếng ồn: 9.60%
   pets: 0.0900,           // Thú cưng: 9.00%
-  schedule: 0.0897,       // Giờ giấc sinh hoạt: 8.97%
+  schedule: 0.0897,       // Giờ giấc: 8.97%
 };
 
-// 2. Thang thứ bậc (Ordinal Ranking) - Công thức Podani chuẩn hóa: c_i = 1 - |rank(u) - rank(v)| / (K - 1)
-export const ORDINAL_CRITERIA: Record<string, { [option: string]: number; _maxRank: number }> = {
-  // Tiêu chí 1: Giờ giấc sinh hoạt
+const publishedWeightSum = CRITERIA_KEYS.reduce(
+  (sum, key) => sum + PUBLISHED_WEIGHTS[key],
+  0,
+);
+
+/** Trọng số dùng để tính điểm: w_i = W^(0)_i / sum(W^(0)). */
+export const INITIAL_WEIGHTS: Readonly<Record<CriterionKey, number>> =
+  CRITERIA_KEYS.reduce(
+    (weights, key) => {
+      weights[key] = PUBLISHED_WEIGHTS[key] / publishedWeightSum;
+      return weights;
+    },
+    {} as Record<CriterionKey, number>,
+  );
+
+export interface OrdinalCriterion {
+  readonly [option: string]: number;
+  readonly _maxRank: number;
+}
+
+/**
+ * Khoảng cách thứ bậc chuẩn hóa lấy cảm hứng từ Podani:
+ * c_i = 1 - |rank(u) - rank(v)| / (K - 1).
+ * FLEXIBLE của giờ giấc là tập chấp nhận {EARLY, NORMAL, NIGHT};
+ * service xử lý riêng, không gán nó thành rank NORMAL.
+ */
+export const ORDINAL_CRITERIA: Readonly<Record<string, OrdinalCriterion>> = {
   schedule: {
-    'Dậy sớm': 1,
-    'Bình thường': 2,
-    'Cú đêm': 3,
-    'Linh hoạt': 2, // Trung lập
+    EARLY: 1,
+    NORMAL: 2,
+    NIGHT: 3,
     _maxRank: 3,
   },
-
-  // Tiêu chí 2: Tiếng ồn
   noise: {
-    'Rất yên tĩnh': 1,
-    'Khá yên tĩnh': 2,
-    'Bình thường': 3,
-    'Không ngại ồn': 4,
+    VERY_QUIET: 1,
+    QUIET: 2,
+    NORMAL: 3,
+    NOISE_OK: 4,
     _maxRank: 4,
   },
-
-  // Tiêu chí 3: Sạch sẽ / Gọn gàng
   cleanliness: {
-    'Rất gọn gàng': 1,
-    'Khá gọn gàng': 2,
-    'Bình thường': 3,
-    'Khá thoải mái': 4,
+    VERY_TIDY: 1,
+    TIDY: 2,
+    NORMAL: 3,
+    RELAXED: 4,
     _maxRank: 4,
   },
-
-  // Tiêu chí 4: Hút thuốc
   smoking: {
-    'Không hút': 1,
-    'Thỉnh thoảng': 2,
-    'Thường xuyên': 3,
+    NEVER: 1,
+    SOMETIMES: 2,
+    OFTEN: 3,
     _maxRank: 3,
   },
-
-  // Tiêu chí 7: Quyền riêng tư
+  // Ba lựa chọn thực tế trên bảng hỏi Android.
   privacy: {
-    'Rất cao': 1,
-    'Khá cao': 2,
-    'Vừa phải': 3,
-    'Thoải mái': 4,
-    _maxRank: 4,
+    HIGH: 1,
+    BALANCED: 2,
+    COMMUNAL: 3,
+    _maxRank: 3,
   },
 };
 
-// 3. Ma trận danh mục ngữ nghĩa M_i(a_u, a_v) (Categorical Similarity - Mục 2.2 & 2.3 - Bảng 2)
-export const CATEGORICAL_MATRICES: Record<string, Record<string, Record<string, number>>> = {
-  // Tiêu chí 6: Khách đến phòng (Bảng 2 trong báo cáo AISC)
+/**
+ * M_i(a_u, a_v): đối xứng, đường chéo 1, mỗi ô thuộc [0, 1].
+ * Giữ riêng từng đáp án; không suy ra đáp án thiếu hay ghi đè ràng buộc cứng.
+ */
+export const CATEGORICAL_MATRICES: Readonly<
+  Record<string, Readonly<Record<string, Readonly<Record<string, number>>>>>
+> = {
+  // Bảng 2: cuối tuần là một kiểu tiếp khách, không phải thứ bậc tần suất.
   guests: {
-    'Hầu như không': { 'Hầu như không': 1.0, 'Thỉnh thoảng': 0.75, 'Cuối tuần': 0.5, 'Thường xuyên': 0.25 },
-    'Thỉnh thoảng': { 'Hầu như không': 0.75, 'Thỉnh thoảng': 1.0, 'Cuối tuần': 0.75, 'Thường xuyên': 0.5 },
-    'Cuối tuần': { 'Hầu như không': 0.5, 'Thỉnh thoảng': 0.75, 'Cuối tuần': 1.0, 'Thường xuyên': 0.75 },
-    'Thường xuyên': { 'Hầu như không': 0.25, 'Thỉnh thoảng': 0.5, 'Cuối tuần': 0.75, 'Thường xuyên': 1.0 },
+    RARE: { RARE: 1, SOMETIMES: 0.75, WEEKENDS: 0.5, OFTEN: 0.25 },
+    SOMETIMES: { RARE: 0.75, SOMETIMES: 1, WEEKENDS: 0.75, OFTEN: 0.5 },
+    WEEKENDS: { RARE: 0.5, SOMETIMES: 0.75, WEEKENDS: 1, OFTEN: 0.75 },
+    OFTEN: { RARE: 0.25, SOMETIMES: 0.5, WEEKENDS: 0.75, OFTEN: 1 },
   },
-
-  // Tiêu chí 5: Thú cưng
+  // Thái độ với thú cưng, không phải bằng chứng đang nuôi hay bị dị ứng.
   pets: {
-    'Thích thú cưng': { 'Thích thú cưng': 1.0, 'Có thể ở cùng': 0.85, 'Không quan tâm': 0.7, 'Không muốn': 0.1 },
-    'Có thể ở cùng': { 'Thích thú cưng': 0.85, 'Có thể ở cùng': 1.0, 'Không quan tâm': 0.85, 'Không muốn': 0.4 },
-    'Không quan tâm': { 'Thích thú cưng': 0.7, 'Có thể ở cùng': 0.85, 'Không quan tâm': 1.0, 'Không muốn': 0.6 },
-    'Không muốn': { 'Thích thú cưng': 0.1, 'Có thể ở cùng': 0.4, 'Không quan tâm': 0.6, 'Không muốn': 1.0 },
+    LOVE: { LOVE: 1, ACCEPT: 0.85, INDIFFERENT: 0.7, NO_PETS: 0.1 },
+    ACCEPT: { LOVE: 0.85, ACCEPT: 1, INDIFFERENT: 0.85, NO_PETS: 0.4 },
+    INDIFFERENT: { LOVE: 0.7, ACCEPT: 0.85, INDIFFERENT: 1, NO_PETS: 0.6 },
+    NO_PETS: { LOVE: 0.1, ACCEPT: 0.4, INDIFFERENT: 0.6, NO_PETS: 1 },
   },
-
-  // Tiêu chí 8: Nấu ăn
+  // SOMETIMES = thỉnh thoảng, TAKEOUT = chủ yếu mua ngoài.
   cooking: {
-    'Tự nấu hàng ngày': { 'Tự nấu hàng ngày': 1.0, 'Nấu cuối tuần': 0.8, 'Hiếm khi nấu': 0.5, 'Không nấu ăn': 0.3 },
-    'Nấu cuối tuần': { 'Tự nấu hàng ngày': 0.8, 'Nấu cuối tuần': 1.0, 'Hiếm khi nấu': 0.8, 'Không nấu ăn': 0.6 },
-    'Hiếm khi nấu': { 'Tự nấu hàng ngày': 0.5, 'Nấu cuối tuần': 0.8, 'Hiếm khi nấu': 1.0, 'Không nấu ăn': 0.9 },
-    'Không nấu ăn': { 'Tự nấu hàng ngày': 0.3, 'Nấu cuối tuần': 0.6, 'Hiếm khi nấu': 0.9, 'Không nấu ăn': 1.0 },
+    OFTEN: { OFTEN: 1, SOMETIMES: 0.8, TAKEOUT: 0.5, NEVER: 0.3 },
+    SOMETIMES: { OFTEN: 0.8, SOMETIMES: 1, TAKEOUT: 0.8, NEVER: 0.6 },
+    TAKEOUT: { OFTEN: 0.5, SOMETIMES: 0.8, TAKEOUT: 1, NEVER: 0.9 },
+    NEVER: { OFTEN: 0.3, SOMETIMES: 0.6, TAKEOUT: 0.9, NEVER: 1 },
   },
-
-  // Tiêu chí 9: Chia chi phí
+  // Tự thanh toán gần với theo sử dụng, nhưng không gộp thành linh hoạt.
   costSharing: {
-    'Chia đều tất cả': { 'Chia đều tất cả': 1.0, 'Dùng bao nhiêu trả bấy nhiêu': 0.6, 'Linh hoạt': 0.8 },
-    'Dùng bao nhiêu trả bấy nhiêu': { 'Chia đều tất cả': 0.6, 'Dùng bao nhiêu trả bấy nhiêu': 1.0, 'Linh hoạt': 0.7 },
-    'Linh hoạt': { 'Chia đều tất cả': 0.8, 'Dùng bao nhiêu trả bấy nhiêu': 0.7, 'Linh hoạt': 1.0 },
+    EQUAL: { EQUAL: 1, USAGE: 0.6, SEPARATE: 0.4, FLEXIBLE: 0.8 },
+    USAGE: { EQUAL: 0.6, USAGE: 1, SEPARATE: 0.9, FLEXIBLE: 0.8 },
+    SEPARATE: { EQUAL: 0.4, USAGE: 0.9, SEPARATE: 1, FLEXIBLE: 0.8 },
+    FLEXIBLE: { EQUAL: 0.8, USAGE: 0.8, SEPARATE: 0.8, FLEXIBLE: 1 },
   },
-
-  // Tiêu chí 10: Trách nhiệm việc chung
+  // Linh hoạt là cách phối hợp, không suy diễn thành thiếu trách nhiệm.
   responsibility: {
-    'Rất chủ động': { 'Rất chủ động': 1.0, 'Theo phân công': 0.85, 'Linh hoạt': 0.6, 'Bình thường': 0.4 },
-    'Theo phân công': { 'Rất chủ động': 0.85, 'Theo phân công': 1.0, 'Linh hoạt': 0.75, 'Bình thường': 0.5 },
-    'Linh hoạt': { 'Rất chủ động': 0.6, 'Theo phân công': 0.75, 'Linh hoạt': 1.0, 'Bình thường': 0.7 },
-    'Bình thường': { 'Rất chủ động': 0.4, 'Theo phân công': 0.5, 'Linh hoạt': 0.7, 'Bình thường': 1.0 },
+    PROACTIVE: { PROACTIVE: 1, ASSIGNED: 0.85, FLEXIBLE: 0.85, NORMAL: 0.6 },
+    ASSIGNED: { PROACTIVE: 0.85, ASSIGNED: 1, FLEXIBLE: 0.85, NORMAL: 0.6 },
+    FLEXIBLE: { PROACTIVE: 0.85, ASSIGNED: 0.85, FLEXIBLE: 1, NORMAL: 0.75 },
+    NORMAL: { PROACTIVE: 0.6, ASSIGNED: 0.6, FLEXIBLE: 0.75, NORMAL: 1 },
   },
 };

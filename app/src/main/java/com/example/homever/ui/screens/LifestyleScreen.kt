@@ -1,6 +1,8 @@
 package com.example.homever.ui.screens
 
 import com.example.homever.domain.model.LifestyleCriteria
+import com.example.homever.domain.model.MatchingPreferenceCatalog
+import androidx.compose.runtime.saveable.rememberSaveable
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -324,30 +326,32 @@ private val WalletIcon: ImageVector
 @Composable
 fun LifestyleScreen(
     modifier: Modifier = Modifier,
+    initialLifestyle: String = "",
     onBack: () -> Unit = {},
     onNext: (String) -> Unit = {}
 ) {
+    val initialAnswers = remember(initialLifestyle) { MatchingPreferenceCatalog.questionnaireAnswers(initialLifestyle) }
     // Current step (1, 2, or 3)
-    var currentStep by remember { mutableStateOf(1) }
+    var currentStep by rememberSaveable { mutableStateOf(1) }
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
 
     // ── Step 1 Choices ───────────────────────────────────────────────
-    var genderPref by remember { mutableStateOf("") }
-    var schedulePref by remember { mutableStateOf("") }
-    var noisePref by remember { mutableStateOf("") }
-    var tidinessPref by remember { mutableStateOf("") }
-    var smokingPref by remember { mutableStateOf("") }
+    var genderPref by rememberSaveable { mutableStateOf(initialAnswers[0]) }
+    var schedulePref by rememberSaveable { mutableStateOf(initialAnswers[1]) }
+    var noisePref by rememberSaveable { mutableStateOf(initialAnswers[2]) }
+    var tidinessPref by rememberSaveable { mutableStateOf(initialAnswers[3]) }
+    var smokingPref by rememberSaveable { mutableStateOf(initialAnswers[4]) }
 
     // ── Step 2 Choices ───────────────────────────────────────────────
-    var petsPref by remember { mutableStateOf("") }
-    var guestsPref by remember { mutableStateOf("") }
-    var privacyPref by remember { mutableStateOf("") }
+    var petsPref by rememberSaveable { mutableStateOf(initialAnswers[5]) }
+    var guestsPref by rememberSaveable { mutableStateOf(initialAnswers[6]) }
+    var privacyPref by rememberSaveable { mutableStateOf(initialAnswers[7]) }
 
     // ── Step 3 Choices ───────────────────────────────────────────────
-    var cookingPref by remember { mutableStateOf("") }
-    var responsibilityPref by remember { mutableStateOf("") }
-    var costSharingPref by remember { mutableStateOf("") }
+    var cookingPref by rememberSaveable { mutableStateOf(initialAnswers[8]) }
+    var responsibilityPref by rememberSaveable { mutableStateOf(initialAnswers[9]) }
+    var costSharingPref by rememberSaveable { mutableStateOf(initialAnswers[10]) }
 
     // Android back button intercepts inside multi-step flow
     BackHandler(enabled = currentStep > 1) {
@@ -611,8 +615,19 @@ fun LifestyleScreen(
 
         Spacer(Modifier.height(36.dp))
 
+        val stepComplete = when (currentStep) {
+            1 -> listOf(genderPref, schedulePref, noisePref, tidinessPref, smokingPref).all(String::isNotBlank)
+            2 -> listOf(petsPref, guestsPref, privacyPref).all(String::isNotBlank)
+            else -> listOf(cookingPref, responsibilityPref, costSharingPref).all(String::isNotBlank)
+        }
+        if (!stepComplete) {
+            Text("Vui lòng chọn đủ đáp án trước khi tiếp tục.", color = TextGray, fontSize = 13.sp)
+            Spacer(Modifier.height(12.dp))
+        }
+
         // ── Action Button ─────────────────────────────────────────────────
         Button(
+            enabled = stepComplete,
             onClick = {
                 if (currentStep < 3) {
                     currentStep++

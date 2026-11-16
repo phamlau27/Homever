@@ -401,6 +401,7 @@ class MainActivity : ComponentActivity() {
                             // ── Onboarding: Step 3 — Lifestyle ─────────────────────
                             composable("lifestyle") {
                                 LifestyleScreen(
+                                    initialLifestyle = tempLifestyle,
                                     onBack = { navController.popBackStack() },
                                     onNext = { lifestyle ->
                                         profileViewModel.saveLifestyleLocally(lifestyle)
@@ -457,6 +458,7 @@ class MainActivity : ComponentActivity() {
                                     onBack = { navController.popBackStack() },
                                     onNext = {
                                         profileViewModel.completeProfile {
+                                            discoveryViewModel.invalidateCandidates()
                                             sessionManager.saveProfileCompleted(true)
                                             navController.navigate("home") {
                                                 popUpTo(0) { inclusive = true }
@@ -468,13 +470,18 @@ class MainActivity : ComponentActivity() {
 
                             // ── Home (Discover) ─────────────────────────────────────
                             composable("home") {
-                                LaunchedEffect(Unit) {
+                                LaunchedEffect(currentProfile) {
+                                    discoveryViewModel.invalidateCandidates()
                                     discoveryViewModel.loadCandidates()
                                     discoveryViewModel.loadInterests()
                                 }
                                 DiscoverScreen(
                                     state = discoveryState,
                                     onRefresh = { discoveryViewModel.loadCandidates(force = true) },
+                                    onCompleteMatching = {
+                                        profileViewModel.clearError()
+                                        navController.navigate("lifestyle")
+                                    },
                                     onPrevious = discoveryViewModel::previous,
                                     onSkip = discoveryViewModel::skip,
                                     onInterest = discoveryViewModel::sendInterest,
@@ -503,6 +510,7 @@ class MainActivity : ComponentActivity() {
                                 val isOwnPreview = selectedUserCandidate == null
                                 val candidate = selectedUserCandidate ?: UserProfile(
                                     displayName = tempDisplayName.ifBlank { "Người dùng" },
+                                    gender = tempGender,
                                     age = tempAge.toIntOrNull() ?: 0,
                                     occupation = tempOccupation,
                                     location = tempLocation,
@@ -517,6 +525,7 @@ class MainActivity : ComponentActivity() {
                                 ) discoveryState.cardPage else 0
                                 UserProfileDetailScreen(
                                     name = candidate.name,
+                                    gender = candidate.gender,
                                     age = candidate.age,
                                     occupation = candidate.occupation,
                                     location = candidate.location,
@@ -690,7 +699,9 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onSaveNotes = { bioVal, lifestyleVal, traitsVal ->
-                                        profileViewModel.saveIntroNotes(bioVal, lifestyleVal, traitsVal)
+                                        profileViewModel.saveIntroNotes(bioVal, lifestyleVal, traitsVal) { success ->
+                                            if (success) discoveryViewModel.invalidateCandidates()
+                                        }
                                     },
                                     onPreviewClick = {
                                         selectedUserCandidate = null

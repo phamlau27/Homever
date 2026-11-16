@@ -145,7 +145,7 @@ private fun InterestCard(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                LifestyleCriteria.criterionLabels(profile.lifestyle).forEach { tag ->
+                LifestyleCriteria.profileLabels(profile.lifestyle, profile.gender).forEach { tag ->
                     Surface(color = Color(0xFFF3F4F6), shape = RoundedCornerShape(12.dp)) {
                         Text(tag, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
                     }

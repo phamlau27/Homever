@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,6 +22,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.homever.ui.theme.*
+import com.example.homever.domain.model.MatchingPreferenceCatalog.budgetLabel
 
 private val BudgetArrowBack: ImageVector
     get() = ImageVector.Builder(
@@ -55,11 +57,13 @@ private val ArrowBackIcon: ImageVector
 @Composable
 fun BudgetScreen(
     modifier: Modifier = Modifier,
-    initialBudget: String = "2.0 - 5.0 triệu/tháng",
+    initialBudget: String = "",
     onBack: () -> Unit = {},
     onNext: (String) -> Unit = {}
 ) {
-    var selectedBudget by remember { mutableStateOf(if (initialBudget.isNotBlank()) initialBudget else "2.0 - 4.0 triệu/tháng") }
+    var selectedBudget by rememberSaveable(initialBudget) {
+        mutableStateOf(initialBudget.takeIf { it in budgetPresets }.orEmpty())
+    }
 
     Column(
         modifier = modifier
@@ -102,7 +106,7 @@ fun BudgetScreen(
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = "Chúng tôi sẽ gợi ý những bạn cùng phòng hoặc phòng trọ phù hợp với khả năng chi trả của bạn.",
+            text = "Chọn ngân sách cá nhân mỗi tháng. Các khoảng đều bao gồm hai mốc; ví dụ 2–4 triệu và 4–6 triệu có chung mốc 4 triệu.",
             fontSize = 14.sp,
             color = TextGray,
             lineHeight = 20.sp
@@ -123,7 +127,7 @@ fun BudgetScreen(
                 Text("Khoảng ngân sách đã chọn", color = TextGray, fontSize = 13.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = selectedBudget,
+                    text = budgetLabel(selectedBudget).ifBlank { "Vui lòng chọn ngân sách" },
                     color = BluePrimary,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold
@@ -163,7 +167,7 @@ fun BudgetScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = preset,
+                            text = budgetLabel(preset),
                             fontSize = 15.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             color = if (isSelected) BluePrimary else HomeverTextDark
@@ -197,7 +201,8 @@ fun BudgetScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             colors = ButtonDefaults.buttonColors(containerColor = BluePrimary),
-            shape = RoundedCornerShape(14.dp)
+            shape = RoundedCornerShape(14.dp),
+            enabled = selectedBudget in budgetPresets
         ) {
             Text(
                 text = "Tiếp tục",

@@ -62,5 +62,66 @@ Trên Windows, dừng backend trước khi chạy `prisma generate` nếu Prisma
 - `POST /v1/matching/interests` với `{"profileId":"..."}`: gửi quan tâm, không tạo trùng, trả về danh sách đã cập nhật.
 - `mutual` chỉ đúng khi hai người đã quan tâm lẫn nhau. API yêu cầu Cognito JWT và không nhận ID người gửi từ client.
 
-Các lựa chọn mới được lưu trong `lifestyle` theo dạng `Tên tiêu chí: Lựa chọn`, ngăn cách bằng dấu chấm phẩy.
-Ứng dụng dùng chung bộ nhãn để hiển thị cả dữ liệu mới và dữ liệu cũ; không tự suy đoán nhóm cho lựa chọn cũ bị mất ngữ cảnh.
+## Matching semantic-v1
+
+Trước khi chạy backend mới trên database đã có dữ liệu, thêm cột JSONB bằng SQL chỉ bổ sung cột:
+
+```bash
+npx prisma db execute --file prisma/matching-preferences.sql --schema prisma/schema.prisma
+npx prisma generate
+npm run test:matching
+npm run start:dev
+```
+
+Dừng backend trước `prisma generate` trên Windows nếu DLL Prisma đang bị khóa. SQL có thể chạy lại
+và không xóa hồ sơ. Database mới có thể dùng `prisma db push` theo phần Setup.
+
+`POST /v1/users/me` nhận thêm `matchingPreferences` theo hợp đồng phiên bản 1:
+
+```json
+{
+  "schemaVersion": 1,
+  "acceptedGenders": ["MALE", "FEMALE", "OTHER"],
+  "districtIds": ["HCM_Q01", "HCM_Q03"],
+  "budgetMinVnd": 2000000,
+  "budgetMaxVnd": null,
+  "answers": {
+    "schedule": "FLEXIBLE",
+    "noise": "QUIET",
+    "cleanliness": "TIDY",
+    "smoking": "NEVER",
+    "pets": "ACCEPT",
+    "guests": "SOMETIMES",
+    "privacy": "BALANCED",
+    "cooking": "SOMETIMES",
+    "responsibility": "ASSIGNED",
+    "costSharing": "EQUAL"
+  }
+}
+```
+
+Ngân sách là VNĐ/người/tháng, biên đóng, `null` nghĩa là không giới hạn trên; giả định chia đều
+tiền thuê theo mục 2.1 báo cáo. Chia chi phí sinh hoạt là một tiêu chí mềm, không thay đổi công thức
+lọc tiền thuê. Khu vực là danh mục tìm kiếm TP.HCM cố định của app; so khớp giao của ID,
+không khớp chuỗi con hoặc tự mở rộng vì cùng thành phố.
+
+Cả hai phía phải chấp nhận giới tính của nhau, có khu vực chung và ngân sách giao nhau.
+Chỉ hồ sơ có đủ dữ liệu hợp lệ mới được chấm điểm. `GET /v1/matching/candidates?limit=20`
+chấp nhận số nguyên từ 1 đến 100, trả tối đa K hồ sơ hợp lệ theo điểm điều hòa giảm dần;
+không bổ sung hồ sơ trượt lọc hay nâng điểm hiển thị. Hồ sơ người đang tìm chưa đầy đủ nhận
+HTTP 422, mã `MATCHING_PROFILE_INCOMPLETE` và `missingFields`; hết ứng viên hợp lệ trả `[]`.
+
+Trọng số HOMEVER gốc được giữ và chuẩn hóa tổng về 1. Ma trận khách đến phòng theo Bảng 2;
+các ma trận còn lại là giả định thiết kế `semantic-v1`, chưa được xác nhận tối ưu bằng thực nghiệm.
+Giờ giấc linh hoạt chấp nhận cả ba lịch; riêng tư dùng đúng ba đáp án Android.
+Điểm phần trăm là điểm tương thích, không phải xác suất Match. Với cùng trọng số và ma trận
+đối xứng, hai điểm có hướng bằng nhau; công thức điều hòa vẫn được giữ để dùng khi có trọng số riêng.
+
+`lifestyle`, `budget`, `location` vẫn được giữ để hiển thị. Hồ sơ cũ chưa có JSON chỉ được đọc
+khi các câu trả lời có tên rõ ràng hoặc đủ 11 câu theo đúng thứ tự bảng hỏi, có khu vực và ngân sách
+đọc được chính xác. Ghi chú và traits không tham gia matching. Thiếu/mơ hồ thì yêu cầu bổ sung,
+không tự điền đáp án hay coi là không giới hạn. Các lần lưu hồ sơ hợp lệ sẽ chuyển sang JSON;
+chưa chạy chuyển đổi hàng loạt dữ liệu cũ.
+
+Bộ hồi quy backend dùng `node:test` với Prisma mock, không truy cập database hay Cognito:
+`npm run test:matching`. Android kiểm tra bằng `./gradlew :app:testDebugUnitTest :app:assembleDebug`.

@@ -1,6 +1,7 @@
 package com.example.homever.ui.screens
 
 import com.example.homever.domain.model.LifestyleCriteria
+import com.example.homever.domain.model.MatchingPreferenceCatalog
 
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -217,7 +218,7 @@ fun ReviewProfileScreen(
             Spacer(Modifier.height(12.dp))
             ReviewRow(
                 label = "Khoảng ngân sách",
-                value = budget.ifBlank { "Chưa chọn ngân sách" }
+                value = MatchingPreferenceCatalog.budgetLabel(budget).ifBlank { "Chưa chọn ngân sách" }
             )
             Spacer(Modifier.height(12.dp))
             HorizontalDivider(color = HomeverGrayBorder)
@@ -240,7 +241,7 @@ fun ReviewProfileScreen(
             )
             Spacer(Modifier.height(14.dp))
 
-            val traitsList = LifestyleCriteria.labels(lifestyle)
+            val traitsList = LifestyleCriteria.profileLabels(lifestyle, gender)
             if (traitsList.isNotEmpty()) {
                 @OptIn(ExperimentalLayoutApi::class)
                 FlowRow(
@@ -353,9 +354,12 @@ private fun ReviewRow(label: String, value: String) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, fontSize = 13.sp, color = TextGray)
+        Text(label, fontSize = 13.sp, color = TextGray, modifier = Modifier.weight(0.4f))
+        Spacer(Modifier.width(12.dp))
         Text(
             value,
+            modifier = Modifier.weight(0.6f),
+            textAlign = TextAlign.End,
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
             color = HomeverTextDark

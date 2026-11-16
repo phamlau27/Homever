@@ -83,7 +83,8 @@ fun PhotoUploadScreen(
     isLoading: Boolean = false,
     errorMessage: String? = null,
     onBack: () -> Unit = {},
-    onComplete: (List<Uri>) -> Unit = {}
+    onComplete: (List<Uri>) -> Unit = {},
+    gender: String = ""
 ) {
     val maxPhotos = 6
     // Danh sách các ảnh bổ sung (ngoài avatar nếu có)
@@ -116,8 +117,8 @@ fun PhotoUploadScreen(
     }
 
     // Phân tích danh sách các tags lối sống
-    val tagsList = remember(lifestyle) {
-        LifestyleCriteria.labels(lifestyle)
+    val tagsList = remember(lifestyle, gender) {
+        LifestyleCriteria.profileLabels(lifestyle, gender)
     }
 
     val locationAndBudget = remember(location, budget) {

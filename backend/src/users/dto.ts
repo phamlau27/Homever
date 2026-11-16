@@ -1,3 +1,5 @@
+import { MatchingPreferences } from '../matching/matching-profile';
+
 export class CreateProfileDto {
   displayName: string;
   gender: string;
@@ -10,6 +12,7 @@ export class CreateProfileDto {
   location?: string;
   traits?: string;
   bio?: string;
+  matchingPreferences?: MatchingPreferences;
 }
 
 export class PresignedUrlDto {

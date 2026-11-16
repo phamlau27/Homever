@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { InterestsService } from './interests.service';
 import { MatchingService } from './matching.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -31,7 +31,9 @@ export class MatchingController {
     @User() user: any,
     @Query('limit') limit?: string,
   ) {
-    const limitNum = limit ? parseInt(limit, 10) : 20;
-    return this.matchingService.getTopCandidates(user.sub, limitNum);
+    if (limit !== undefined && !/^[1-9]\d*$/.test(limit)) {
+      throw new BadRequestException('limit phải là số nguyên từ 1 đến 100');
+    }
+    return this.matchingService.getTopCandidates(user.sub, limit === undefined ? 20 : Number(limit));
   }
 }
